@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>44專業復健陪伴 v44</title>
+    <title>專業復健陪伴 v45</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -41,7 +41,7 @@
 <div class="container">
     <div class="nurse-header">
         <h3>專業復健陪伴</h3>
-        <p>瞬時發聲 · Chrome 完美對位</p>
+        <p>Chrome 絕對對位版</p>
     </div>
     <div class="settings-container">
         <div class="settings-box">
@@ -104,27 +104,36 @@
                voices[0];
     }
 
-    function speakNumber(num) {
-        if (!document.getElementById("countToggle").checked) return;
-        synth.cancel();
+    function speakAndStep() {
+        if (remaining <= 0) {
+            handleComplete();
+            return;
+        }
+
+        document.getElementById("display").textContent = remaining;
         
-        const u = new SpeechSynthesisUtterance(String(num));
-        u.lang = "zh-TW";
-        u.voice = getVoice();
-        u.pitch = 1.05;
-        
-        if (isChromeDesktop) {
-            // *** Chrome 終極同步邏輯：不再等待，直接起跑並大幅拉慢語速 ***
-            u.rate = (num > 10) ? 0.72 : 0.55;
-            synth.speak(u);
-        } else if (isIOS) {
-            u.rate = (num > 10) ? 0.92 : 0.75;
-            let delay = (num > 10) ? 0 : 250;
-            setTimeout(() => { synth.speak(u); }, delay);
-        } else {
-            u.rate = 0.8;
+        if (document.getElementById("countToggle").checked) {
+            synth.cancel();
+            const u = new SpeechSynthesisUtterance(String(remaining));
+            u.lang = "zh-TW";
+            u.voice = getVoice();
+            u.pitch = 1.05;
+            
+            if (isChromeDesktop) {
+                // Chrome 專屬：壓慢語速到 0.7，強迫聲音撐滿視覺的一秒
+                u.rate = (remaining > 10) ? 0.7 : 0.6;
+            } else if (isIOS) {
+                u.rate = (remaining > 10) ? 0.92 : 0.75;
+            } else {
+                u.rate = 0.8;
+            }
+            
             synth.speak(u);
         }
+
+        remaining--;
+        // 使用計時器精準控制每一秒的循環
+        timerId = setTimeout(speakAndStep, 1000);
     }
 
     function handleStart() {
@@ -142,46 +151,38 @@
         document.getElementById("startBtn").style.display = "none";
         document.getElementById("pauseBtn").style.display = "inline-block";
         
-        // *** 核心修復：按下瞬間先發聲，絕不等待計時器 ***
-        speakNumber(remaining);
-        document.getElementById("display").textContent = remaining;
-        remaining--;
-        
-        timerId = setInterval(runTick, 1000);
+        // 啟動發聲與計時
+        speakAndStep();
     }
 
-    function runTick() {
-        if (remaining > 0) {
-            document.getElementById("display").textContent = remaining;
-            speakNumber(remaining);
-            remaining--;
-        } else {
-            clearInterval(timerId); timerId = null;
-            document.getElementById("display").textContent = "0";
-            playClinicChime(); 
-            setTimeout(() => {
-                if (!document.getElementById("voiceToggle").checked) return;
-                synth.cancel();
-                let endMsg = new SpeechSynthesisUtterance("我們休息一下");
-                endMsg.lang = "zh-TW";
-                endMsg.voice = getVoice();
-                endMsg.rate = (isChromeDesktop) ? 0.4 : 0.52; 
-                synth.speak(endMsg);
-            }, 1200); 
-            resetUI();
-        }
+    function handleComplete() {
+        clearTimeout(timerId);
+        timerId = null;
+        document.getElementById("display").textContent = "0";
+        playClinicChime(); 
+        setTimeout(() => {
+            if (!document.getElementById("voiceToggle").checked) return;
+            synth.cancel();
+            let endMsg = new SpeechSynthesisUtterance("我們休息一下");
+            endMsg.lang = "zh-TW";
+            endMsg.voice = getVoice();
+            endMsg.rate = (isChromeDesktop) ? 0.45 : 0.52; 
+            synth.speak(endMsg);
+        }, 1200); 
+        resetUI();
     }
 
     function handlePause() {
-        clearInterval(timerId); timerId = null; isPaused = true;
+        clearTimeout(timerId); timerId = null; isPaused = true;
         synth.cancel();
         document.getElementById("startBtn").innerText = "繼續";
+        document.getElementById("startBtn").style.display = "none"; // 暫時修正顯示邏輯
         document.getElementById("startBtn").style.display = "inline-block";
         document.getElementById("pauseBtn").style.display = "none";
     }
 
     function handleReset() {
-        clearInterval(timerId); timerId = null; remaining = 0; isPaused = false;
+        clearTimeout(timerId); timerId = null; remaining = 0; isPaused = false;
         synth.cancel();
         document.getElementById("display").textContent = "0";
         resetUI();
@@ -195,6 +196,7 @@
         document.getElementById("startBtn").style.display = "inline-block";
         document.getElementById("pauseBtn").style.display = "none";
     }
+    
     window.onload = () => { synth.getVoices(); };
 </script>
 </body>
