@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>15專業復健治療師計時器 v15</title>
+    <title>16專業復健治療師計時器 v16</title>
     <style>
-        /* 畫面結構完全鎖定 */
+        /* 畫面佈局完全鎖定 */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
         body {
@@ -60,9 +60,7 @@
     </div>
 
     <input type="number" id="seconds" placeholder="請設定秒數" inputmode="numeric">
-    
     <div id="display">0</div>
-    
     <div class="controls">
         <button id="startBtn" onclick="handleStart()">開始</button>
         <button id="pauseBtn" onclick="handlePause()">暫停</button>
@@ -83,12 +81,12 @@
         if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
-    // 醫療診間清脆鈴聲 (C5, G5, C6)
+    // 高品質明亮鈴聲 (G5, B5, D6)
     function playAlarm() {
         if (!document.getElementById("voiceToggle").checked) return;
         wakeUpAudio();
         const now = audioCtx.currentTime;
-        const freqs = [523.25, 783.99, 1046.50];
+        const freqs = [783.99, 987.77, 1174.66];
         freqs.forEach((freq) => {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -97,16 +95,17 @@
             gain.connect(audioCtx.destination);
             osc.frequency.setValueAtTime(freq, now);
             gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(0.25, now + 0.08); 
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+            gain.gain.linearRampToValueAtTime(0.3, now + 0.05); 
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
             osc.start(now);
-            osc.stop(now + 1.8);
+            osc.stop(now + 1.5);
         });
     }
 
-    // 26 歲治療師風格調律
+    // 26歲治療師極致口語化調律
     function createMsg(text, type = "normal") {
-        const u = new SpeechSynthesisUtterance(text);
+        // 在結尾加上不可見的隱形標點，強迫觸發高品質語音包的擬真語調起伏
+        const u = new SpeechSynthesisUtterance(text + "。 ");
         u.lang = "zh-TW";
         const voices = synth.getVoices();
         const target = voices.find(v => v.name.includes('Meijia') && v.name.includes('Premium')) || 
@@ -116,13 +115,13 @@
         
         u.volume = 1.0;
         if (type === "ending") {
-            // 結束語語音：更慢、音調更高，模擬親切叮嚀
-            u.rate = 0.72;   
+            // 結束語：超慢速以展現氣息感，高音調增加親和力
+            u.rate = 0.7;   
             u.pitch = 1.15; 
         } else {
-            // 報數數字：穩定且具備導引感
-            u.rate = 0.88;  
-            u.pitch = 1.10;
+            // 報數數字：朝氣且專業清晰
+            u.rate = 0.9;  
+            u.pitch = 1.1;
         }
         return u;
     }
@@ -153,11 +152,11 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm(); 
-                // 關鍵優化：拉長間隔至 1 秒，模擬真人的換氣與觀察節奏
+                // 模擬治療師動作完成後的微笑與換氣時間
                 setTimeout(() => {
                     synth.cancel();
                     synth.speak(createMsg("我們休息一下", "ending"));
-                }, 1000);
+                }, 1200);
                 resetUI();
                 return;
             }
