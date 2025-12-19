@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>暖心護理師計時器</title>
+    <title>2暖心護理師計時器</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -23,12 +23,10 @@
         }
         .instruction-box h3 { margin: 0 0 8px 0; font-size: 32px; color: #e67700; font-weight: 900; }
         .instruction-box p { margin: 4px 0; font-size: 28px; color: #2b2f33; font-weight: 800; }
-        
         .settings-container { background: #f8f9fa; border-radius: 15px; padding: 8px 15px; margin-bottom: 12px; }
         .settings-box { display: flex; align-items: center; justify-content: flex-start; gap: 12px; padding: 6px 0; }
         .settings-box label { font-size: 24px; font-weight: 700; color: #444; cursor: pointer; }
         .settings-box input[type="checkbox"] { transform: scale(1.8); cursor: pointer; }
-        
         input[type="number"] {
             width: 100%; font-size: 38px; padding: 15px; margin-bottom: 12px;
             border: 2px solid #c6c6c8; border-radius: 14px; text-align: center; outline: none; background: #f2f2f7;
@@ -54,7 +52,6 @@
         <p>2.按開始鍵</p>
         <p>3.結束聽報數</p>
     </div>
-
     <div class="settings-container">
         <div class="settings-box">
             <input type="checkbox" id="voiceToggle" checked>
@@ -65,10 +62,8 @@
             <label for="countToggle">倒數中要報數</label>
         </div>
     </div>
-
     <input type="number" id="seconds" placeholder="請輸入秒數" min="1" inputmode="numeric">
     <div id="display">0</div>
-
     <div class="controls">
         <button id="startBtn" onclick="handleStart()">開始倒數</button>
         <button id="pauseBtn" onclick="handlePause()">暫停</button>
@@ -84,7 +79,6 @@
     let audioCtx = null;
     const inputField = document.getElementById("seconds");
 
-    // 鍵盤復位
     inputField.addEventListener('blur', () => { window.scrollTo(0, 0); });
     inputField.addEventListener('focus', function() { this.value = ''; });
 
@@ -93,53 +87,59 @@
         if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
-    // 強化版鈴聲：大聲且清亮
     function playAlarm() {
         if (!document.getElementById("voiceToggle").checked) return;
         wakeUpAudio();
         const now = audioCtx.currentTime;
-        
-        // 使用雙振盪器模擬清脆的和弦報警音
-        [880, 1046].forEach(freq => {
+        // 強化鈴聲：清脆和弦
+        [880, 1100].forEach(freq => {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
+            osc.connect(gain); gain.connect(audioCtx.destination);
             osc.frequency.setValueAtTime(freq, now);
             gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(0.8, now + 0.05); // 音量加大至 0.8
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
-            osc.start(now);
-            osc.stop(now + 1.5);
+            gain.gain.linearRampToValueAtTime(0.85, now + 0.05); 
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
+            osc.start(now); osc.stop(now + 1.2);
         });
     }
 
-    function speak(text, isEnding = false) {
-        const countToggle = document.getElementById("countToggle").checked;
-        const voiceToggle = document.getElementById("voiceToggle").checked;
-        if (!countToggle && !isEnding) return;
-        if (isEnding && !voiceToggle) return;
-
-        synth.cancel(); 
-        
-        // 護理師風格優化：使用字串前綴增加氣流感
-        const u = new SpeechSynthesisUtterance(text); 
+    function getUtterance(text, isNursesTone = true) {
+        const u = new SpeechSynthesisUtterance(text);
         u.lang = "zh-TW";
-
         const voices = synth.getVoices();
         const target = voices.find(v => v.name.includes('Meijia') && v.name.includes('Premium')) || 
                        voices.find(v => v.lang.includes('zh-TW') && v.name.includes('Premium')) ||
                        voices.find(v => v.lang.includes('zh-TW'));
         if (target) u.voice = target;
-
-        if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-            u.rate = 0.72;   // 稍慢，減少生硬切斷感
-            u.pitch = 0.75;  // 飽滿溫馨的中頻
-            u.volume = 1.0; 
-        }
         
-        // 關鍵：給予 50 毫秒的系統緩衝，避免發音開頭被切掉
-        setTimeout(() => synth.speak(u), 50);
+        if (isNursesTone) {
+            u.rate = 0.7;   // 緩慢叮嚀
+            u.pitch = 0.8;  // 清亮親切
+        } else {
+            u.rate = 0.75;  // 報數節奏
+            u.pitch = 0.75;
+        }
+        return u;
+    }
+
+    function speak(text, isEnding = false) {
+        if (!document.getElementById("countToggle").checked && !isEnding) return;
+        if (isEnding && !document.getElementById("voiceToggle").checked) return;
+
+        synth.cancel();
+        
+        if (isEnding) {
+            // 分段模擬真人語氣：先說「好囉」，停頓一下再說「休息一下」
+            const part1 = getUtterance("好囉");
+            const part2 = getUtterance("休息一下");
+            
+            synth.speak(part1);
+            // 手動插入停頓感
+            setTimeout(() => { synth.speak(part2); }, 800);
+        } else {
+            synth.speak(getUtterance(text, false));
+        }
     }
 
     function handleStart() {
@@ -152,12 +152,10 @@
             if (isNaN(remaining) || remaining <= 0) return;
             inputField.disabled = true;
         }
-        
         isPaused = false;
         document.getElementById("startBtn").style.display = "none";
         document.getElementById("pauseBtn").style.display = "inline-block";
         document.getElementById("display").textContent = remaining;
-        
         speak(String(remaining));
 
         timerId = setInterval(() => {
@@ -167,8 +165,8 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm();
-                // 充滿溫情的完整語句
-                setTimeout(() => speak("時間到了喔，辛苦了，休息一下吧", true), 1000); 
+                // 延遲報讀口語化結尾
+                setTimeout(() => speak("", true), 1000); 
                 resetUI();
                 return;
             }
