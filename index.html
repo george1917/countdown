@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>Safari 語音全修復版</title>
+    <title>語音倒數計時器</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
@@ -41,16 +41,16 @@
 
 <div class="container">
     <div class="instruction-box">
-        <h3>【 沒聲音排除 】</h3>
-        <p>1. 檢查手機左側<b>靜音開關</b>是否關閉</p>
-        <p>2. 確認<b>媒體音量</b>已拉到最大</p>
+        <h3>【 聲音修復說明 】</h3>
+        <p>1. iPhone <b>左側開關</b>不可見橘色 (響鈴模式)</p>
+        <p>2. 點擊「開始」會解鎖聲音</p>
     </div>
 
     <input type="number" id="seconds" placeholder="輸入秒數" min="1" inputmode="numeric" autofocus>
     <div id="display">0</div>
 
     <div class="controls">
-        <button id="startBtn" onclick="safariUnlockAndStart()">開始倒數</button>
+        <button id="startBtn" onclick="handleStart()">開始倒數</button>
         <button id="pauseBtn" onclick="handlePause()">暫停</button>
         <button id="resetBtn" onclick="handleReset()">重設</button>
     </div>
@@ -60,33 +60,36 @@
     let timerId = null;
     let remaining = 0;
     let isPaused = false;
-    let audioCtx = null;
     const synth = window.speechSynthesis;
-    const inputField = document.getElementById("seconds");
+    let audioCtx = null;
 
-    // 預初始化
+    // 預初始化語音列表
     window.onload = () => {
         synth.getVoices();
-        inputField.focus();
+        document.getElementById("seconds").focus();
     };
 
     function speak(text) {
+        // 先強制中止，確保不會堆疊
         synth.cancel(); 
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "zh-TW";
-        u.rate = 1.6; 
-        u.pitch = 0.9;
+        u.rate = 1.6;
+        u.pitch = 0.95;
         
         const voices = synth.getVoices();
-        const premiumVoice = voices.find(v => v.lang.includes('zh-TW') && (v.name.includes('Premium') || v.name.includes('Enhanced'))) ||
-                             voices.find(v => v.lang.includes('zh-TW'));
+        // 優先搜尋高品質台灣人聲
+        const target = voices.find(v => v.lang.includes('zh-TW') && (v.name.includes('Premium') || v.name.includes('Enhanced'))) || 
+                       voices.find(v => v.lang.includes('zh-TW'));
+        if (target) u.voice = target;
         
-        if (premiumVoice) u.voice = premiumVoice;
         synth.speak(u);
     }
 
     function playAlarm() {
-        // 在倒數結束時，不需要重新 resume，因為點擊時已經授權
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.connect(gain); gain.connect(audioCtx.destination);
@@ -98,42 +101,30 @@
         osc.stop(audioCtx.currentTime + 0.3);
     }
 
-    // --- 終極修正：Safari 強制授權啟動 ---
-    function safariUnlockAndStart() {
-        // A. 建立並啟動 AudioContext (必須在點擊事件的第一行)
-        if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
-
-        // B. 強制發送一個空語音解鎖 Speech API
+    function handleStart() {
+        // 【核心解鎖】
+        // 1. 立即激活語音引擎
         const unlockVoice = new SpeechSynthesisUtterance("");
         synth.speak(unlockVoice);
 
-        // C. 播放一個極短的靜音解鎖鈴聲
-        const silentBuf = audioCtx.createBuffer(1, 1, 22050);
-        const source = audioCtx.createBufferSource();
-        source.buffer = silentBuf;
-        source.connect(audioCtx.destination);
-        source.start(0);
+        // 2. 立即激活 Web Audio API (鈴聲)
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
 
-        // D. 執行倒數邏輯
-        handleStart();
-    }
-
-    function handleStart() {
+        // 3. 獲取秒數邏輯
         if (!isPaused) {
-            const val = parseInt(inputField.value, 10);
-            if (isNaN(val) || val <= 0) { alert("請輸入秒數"); return; }
-            remaining = val;
+            const input = document.getElementById("seconds");
+            remaining = parseInt(input.value, 10);
+            if (isNaN(remaining) || remaining <= 0) {
+                alert("請輸入秒數");
+                return;
+            }
+            input.disabled = true;
         }
         
         isPaused = false;
         document.getElementById("startBtn").style.display = "none";
         document.getElementById("pauseBtn").style.display = "inline-block";
-        inputField.disabled = true;
         
         document.getElementById("display").textContent = remaining;
         speak(String(remaining));
@@ -145,7 +136,7 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm();
-                setTimeout(() => speak("時間到"), 600); 
+                setTimeout(() => speak("倒數結束"), 700); 
                 resetUI();
                 return;
             }
@@ -175,11 +166,12 @@
     }
 
     function resetUI() {
-        inputField.disabled = false;
+        const input = document.getElementById("seconds");
+        input.disabled = false;
         document.getElementById("startBtn").innerText = "開始倒數";
         document.getElementById("startBtn").style.display = "inline-block";
         document.getElementById("pauseBtn").style.display = "none";
-        setTimeout(() => inputField.focus(), 100);
+        setTimeout(() => input.focus(), 100);
     }
 </script>
 
