@@ -10,52 +10,54 @@
             margin: 0; min-height: 100vh;
             display: flex; align-items: center; justify-content: center;
             background: #f0f2f5;
-            font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+            font-family: -apple-system, "Microsoft JhengHei", sans-serif;
         }
         .container {
-            width: 95%; max-width: 450px; padding: 25px;
-            background: #ffffff; border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 95%; max-width: 500px; padding: 30px;
+            background: #ffffff; border-radius: 24px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
         }
-        /* 強化的操作說明樣式 */
+        /* 加大版使用說明樣式 */
         .instruction-box {
-            background: #e7f3ff;
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 20px;
+            background: #f0f7ff;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 25px;
             text-align: left;
-            border-left: 6px solid #007aff;
+            border-left: 8px solid #007aff;
         }
         .instruction-box h3 {
-            margin: 0 0 8px 0;
-            font-size: 20px;
+            margin: 0 0 12px 0;
+            font-size: 28px; /* 加大標題 */
             color: #007aff;
+            font-weight: 800;
         }
         .instruction-box p {
-            margin: 4px 0;
-            font-size: 15px;
-            color: #4b5563;
-            line-height: 1.5;
+            margin: 8px 0;
+            font-size: 20px; /* 加大內文 */
+            color: #1f2933;
+            line-height: 1.6;
+            font-weight: 500;
         }
         input[type="number"] {
-            width: 100%; font-size: 30px; padding: 15px; margin-bottom: 15px;
-            border: 2px solid #ddd; border-radius: 12px; text-align: center;
+            width: 100%; font-size: 36px; padding: 18px; margin-bottom: 20px;
+            border: 3px solid #d1d5db; border-radius: 16px; text-align: center;
             outline: none;
         }
+        input:focus { border-color: #007aff; }
         #display {
-            font-size: 100px; font-weight: 800; color: #1c1e21;
-            margin: 15px 0; text-align: center; font-variant-numeric: tabular-nums;
+            font-size: 120px; font-weight: 900; color: #111827;
+            margin: 10px 0; text-align: center; font-variant-numeric: tabular-nums;
         }
-        .controls { display: flex; gap: 10px; }
+        .controls { display: flex; gap: 12px; }
         button {
-            flex: 1; font-size: 20px; font-weight: 600; padding: 15px;
-            border: none; border-radius: 12px; cursor: pointer; transition: 0.2s;
+            flex: 1; font-size: 24px; font-weight: 700; padding: 20px;
+            border: none; border-radius: 16px; cursor: pointer; transition: 0.2s;
         }
         #startBtn { background: #007aff; color: white; }
         #pauseBtn { background: #ff9500; color: white; display: none; }
-        #resetBtn { background: #eee; color: #444; }
-        button:active { opacity: 0.8; transform: translateY(1px); }
-        button:disabled { background: #ccc; cursor: not-allowed; }
+        #resetBtn { background: #e5e7eb; color: #4b5563; }
+        button:active { transform: scale(0.96); opacity: 0.9; }
     </style>
 </head>
 <body>
@@ -63,10 +65,10 @@
 <div class="container">
     <div class="instruction-box">
         <h3>使用說明</h3>
-        <p>1. 於下方輸入框輸入欲倒數的秒數。</p>
-        <p>2. 點擊「開始」後，語音將與數字同步跳動。</p>
-        <p>3. 倒數時可點擊「暫停」或「重設」進行操作。</p>
-        <p>4. 結束後會發出嗶聲並播報「時間到」。</p>
+        <p>1. 輸入欲倒數的秒數。</p>
+        <p>2. 按下「開始」，語音與數字即刻同步。</p>
+        <p>3. 倒數中可隨時「暫停」或「重設」。</p>
+        <p>4. 結束時會發出警示音。 </p>
     </div>
 
     <input type="number" id="seconds" placeholder="輸入秒數" min="1" inputmode="numeric">
@@ -86,47 +88,39 @@
     let isPaused = false;
     const synth = window.speechSynthesis;
 
-    const startBtn = document.getElementById("startBtn");
-    const pauseBtn = document.getElementById("pauseBtn");
-    const inputField = document.getElementById("seconds");
-    const display = document.getElementById("display");
-
     function speak(text) {
-        // 先強制結束之前的聲音，確保不堆積、不延遲
-        synth.cancel(); 
+        synth.cancel(); // 徹底中斷舊語音，防止重疊
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "zh-TW";
-        u.rate = 1.6; // 核心修正：加快速率以匹配 1 秒跳動
+        u.rate = 1.6; // 加快語速確保一秒內唸完
         setTimeout(() => synth.speak(u), 5);
     }
 
     function playBeep() {
-        try {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.5);
-        } catch(e) {}
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.6);
     }
 
     function handleStart() {
         if (!isPaused) {
-            remaining = parseInt(inputField.value, 10);
+            remaining = parseInt(document.getElementById("seconds").value, 10);
             if (isNaN(remaining) || remaining <= 0) return;
         }
         
         isPaused = false;
-        startBtn.style.display = "none";
-        pauseBtn.style.display = "inline-block";
-        inputField.disabled = true;
+        document.getElementById("startBtn").style.display = "none";
+        document.getElementById("pauseBtn").style.display = "inline-block";
+        document.getElementById("seconds").disabled = true;
 
-        display.textContent = remaining;
+        document.getElementById("display").textContent = remaining;
         speak(String(remaining));
 
         timerId = setInterval(() => {
@@ -134,13 +128,13 @@
             if (remaining <= 0) {
                 clearInterval(timerId);
                 timerId = null;
-                display.textContent = "0";
+                document.getElementById("display").textContent = "0";
                 speak("時間到");
                 playBeep();
                 resetUI();
                 return;
             }
-            display.textContent = remaining;
+            document.getElementById("display").textContent = remaining;
             speak(String(remaining));
         }, 1000);
     }
@@ -150,9 +144,9 @@
         timerId = null;
         isPaused = true;
         synth.cancel();
-        startBtn.innerText = "繼續";
-        startBtn.style.display = "inline-block";
-        pauseBtn.style.display = "none";
+        document.getElementById("startBtn").innerText = "繼續";
+        document.getElementById("startBtn").style.display = "inline-block";
+        document.getElementById("pauseBtn").style.display = "none";
     }
 
     function handleReset() {
@@ -161,15 +155,15 @@
         remaining = 0;
         isPaused = false;
         synth.cancel();
-        display.textContent = "0";
+        document.getElementById("display").textContent = "0";
         resetUI();
     }
 
     function resetUI() {
-        inputField.disabled = false;
-        startBtn.innerText = "開始";
-        startBtn.style.display = "inline-block";
-        pauseBtn.style.display = "none";
+        document.getElementById("seconds").disabled = false;
+        document.getElementById("startBtn").innerText = "開始";
+        document.getElementById("startBtn").style.display = "inline-block";
+        document.getElementById("pauseBtn").style.display = "none";
     }
 </script>
 
