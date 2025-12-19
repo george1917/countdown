@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>13專業復健計時器 v13</title>
+    <title>專業復健計時器</title>
     <style>
-        /* 畫面結構鎖定，維持 v12 佈局 */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
         body {
@@ -18,44 +17,47 @@
             background: #ffffff; border-radius: 35px; box-shadow: 0 10px 40px rgba(0,0,0,0.08);
         }
         .nurse-header { text-align: center; margin-bottom: 20px; }
-        .nurse-header h3 { margin: 0; font-size: 24px; color: #1c7ed6; letter-spacing: 1px; }
-        .nurse-header p { margin: 5px 0 0; font-size: 18px; color: #868e96; font-weight: 500; }
-        .settings-container { background: #f8f9fa; border-radius: 20px; padding: 12px; margin-bottom: 20px; }
-        .settings-box { display: flex; align-items: center; gap: 12px; padding: 6px; }
-        .settings-box label { font-size: 20px; font-weight: 700; color: #495057; }
-        input[type="checkbox"] { width: 22px; height: 22px; cursor: pointer; }
+        .nurse-header h3 { margin: 0; font-size: 28px; color: #1c7ed6; letter-spacing: 1px; }
+        .nurse-header p { margin: 8px 0 0; font-size: 20px; color: #868e96; font-weight: 500; }
+        
+        .settings-container { background: #f8f9fa; border-radius: 20px; padding: 15px; margin-bottom: 20px; }
+        .settings-box { display: flex; align-items: center; gap: 15px; padding: 8px 0; }
+        .settings-box label { font-size: 22px; font-weight: 700; color: #495057; cursor: pointer; }
+        input[type="checkbox"] { transform: scale(1.8); cursor: pointer; }
+
         input[type="number"] {
             width: 100%; font-size: 48px; padding: 18px; margin-bottom: 20px;
             border: 2px solid #e9ecef; border-radius: 20px; text-align: center; outline: none; background: #f8f9fa;
             color: #212529; font-weight: bold;
         }
         #display { font-size: 130px; font-weight: 900; color: #212529; margin: 15px 0; text-align: center; font-variant-numeric: tabular-nums; line-height: 1; }
+        
         .controls { display: flex; gap: 12px; }
         button {
-            flex: 1; font-size: 22px; font-weight: 700; padding: 22px 10px; border: none; border-radius: 20px; cursor: pointer; transition: 0.1s;
+            flex: 1; font-size: 24px; font-weight: 700; padding: 22px 10px; border: none; border-radius: 20px; cursor: pointer; transition: 0.1s;
         }
-        #startBtn { background: #339af0; color: white; box-shadow: 0 4px 12px rgba(51,154,240,0.3); }
+        #startBtn { background: #339af0; color: white; }
         #pauseBtn { background: #fab005; color: white; display: none; }
         #resetBtn { background: #dee2e6; color: #495057; }
-        button:active { transform: scale(0.96); opacity: 0.9; }
+        button:active { transform: scale(0.96); }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="nurse-header">
-        <h3>專業復健護理師</h3>
-        <p>溫柔穩定 · 親切陪伴</p>
+        <h3>專業復健陪伴</h3>
+        <p>溫柔叮嚀 · 穩定陪伴</p>
     </div>
     
     <div class="settings-container">
         <div class="settings-box">
             <input type="checkbox" id="voiceToggle" checked>
-            <label for="voiceToggle">開啟專業音訊</label>
+            <label for="voiceToggle">結束時響鈴並說話</label>
         </div>
         <div class="settings-box">
             <input type="checkbox" id="countToggle" checked>
-            <label for="countToggle">倒數過程報數</label>
+            <label for="countToggle">倒數時唸出數字</label>
         </div>
     </div>
 
@@ -83,13 +85,12 @@
         if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
-    // 26歲護理師氣質鈴聲：A大調清亮和弦 (A4, C#5, E5, A5)
     function playAlarm() {
         if (!document.getElementById("voiceToggle").checked) return;
         wakeUpAudio();
         const now = audioCtx.currentTime;
         const freqs = [440.00, 554.37, 659.25, 880.00];
-        freqs.forEach((freq, i) => {
+        freqs.forEach((freq) => {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = 'sine';
@@ -104,9 +105,7 @@
         });
     }
 
-    // 核心優化：對標 26歲護理師朝氣語感 (Pitch 1.1, Rate 0.82)
     function createMsg(text, isEnding = false) {
-        // 在結束語尾端加入一個空格，能觸發語音包更自然的「收尾音」
         const u = new SpeechSynthesisUtterance(text + " ");
         u.lang = "zh-TW";
         const voices = synth.getVoices();
@@ -117,10 +116,10 @@
         
         u.volume = 1.0;
         if (isEnding) {
-            u.rate = 0.82; // 結束語略慢，顯得溫柔叮嚀
-            u.pitch = 1.1; // 略高音調，呈現 26 歲的朝氣
+            u.rate = 0.82; 
+            u.pitch = 1.1; 
         } else {
-            u.rate = 0.85; // 報數略快，顯得穩定清晰
+            u.rate = 0.85; 
             u.pitch = 1.05;
         }
         return u;
@@ -129,7 +128,7 @@
     function handleStart() {
         inputField.blur();
         wakeUpAudio();
-        synth.speak(new SpeechSynthesisUtterance("")); // 預熱
+        synth.speak(new SpeechSynthesisUtterance("")); 
         if (!isPaused) {
             remaining = parseInt(inputField.value, 10);
             if (isNaN(remaining) || remaining <= 0) return;
@@ -152,7 +151,6 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm(); 
-                // 增加物理停頓感，讓聲音聽起來像真人在反應
                 setTimeout(() => {
                     synth.cancel();
                     synth.speak(createMsg("我們休息一下", true));
@@ -174,7 +172,6 @@
         isPaused = true;
         synth.cancel();
         document.getElementById("startBtn").innerText = "繼續";
-        document.getElementById("startBtn").style.display = "none"; // 保持簡單
         document.getElementById("startBtn").style.display = "inline-block";
         document.getElementById("pauseBtn").style.display = "none";
     }
