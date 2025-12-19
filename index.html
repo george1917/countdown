@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>真人感計時器 - 終極音質</title>
+    <title>真人語音計時器</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
@@ -23,13 +23,19 @@
             margin: 6px 0; font-size: 30px; color: #2b2f33; font-weight: 800; 
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        .settings-box {
-            display: flex; align-items: center; justify-content: center;
-            gap: 15px; margin-bottom: 15px; padding: 12px;
+        
+        /* 雙開關排版 */
+        .settings-container {
             background: #f8f9fa; border-radius: 15px;
+            padding: 10px 15px; margin-bottom: 15px;
+        }
+        .settings-box {
+            display: flex; align-items: center; justify-content: flex-start;
+            gap: 15px; padding: 8px 0;
         }
         .settings-box label { font-size: 26px; font-weight: 700; color: #444; cursor: pointer; }
         .settings-box input[type="checkbox"] { transform: scale(2.2); cursor: pointer; }
+        
         input[type="number"] {
             width: 100%; font-size: 42px; padding: 18px; margin-bottom: 15px;
             border: 2px solid #c6c6c8; border-radius: 14px; text-align: center; outline: none; background: #f2f2f7;
@@ -56,9 +62,15 @@
         <p>3.結束聽報數</p>
     </div>
 
-    <div class="settings-box">
-        <input type="checkbox" id="voiceToggle" checked>
-        <label for="voiceToggle">開啟報數與鈴聲</label>
+    <div class="settings-container">
+        <div class="settings-box">
+            <input type="checkbox" id="voiceToggle" checked>
+            <label for="voiceToggle">開啟結束鈴聲</label>
+        </div>
+        <div class="settings-box">
+            <input type="checkbox" id="countToggle" checked>
+            <label for="countToggle">倒數中要報數</label>
+        </div>
     </div>
 
     <input type="number" id="seconds" placeholder="請輸入秒數" min="1" inputmode="numeric" autofocus>
@@ -80,6 +92,7 @@
     let silentNode = null;
     const inputField = document.getElementById("seconds");
     const voiceToggle = document.getElementById("voiceToggle");
+    const countToggle = document.getElementById("countToggle");
 
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
@@ -108,17 +121,19 @@
         osc.type = 'sine';
         osc.frequency.setValueAtTime(880, now);
         gain.gain.setValueAtTime(0, now);
-        gain.gain.linearRampToValueAtTime(0.4, now + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+        gain.gain.linearRampToValueAtTime(0.5, now + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
         osc.start(now);
-        osc.stop(now + 0.5);
+        osc.stop(now + 0.6);
     }
 
-    function speak(text) {
-        if (!voiceToggle.checked) return;
+    function speak(text, force = false) {
+        // 如果沒有勾選報數且不是強制播放(結尾)，則跳過
+        if (!countToggle.checked && !force) return;
+        // 如果總開關(結束鈴聲)被關掉，則結尾語音也不播
+        if (force && !voiceToggle.checked) return;
+
         synth.cancel(); 
-        
-        // 模擬真人語氣的標點
         const u = new SpeechSynthesisUtterance(text + " ");
         u.lang = "zh-TW";
 
@@ -129,9 +144,9 @@
         if (target) u.voice = target;
 
         if (isIOS) {
-            u.rate = 0.8;    // 極限平穩語速
-            u.pitch = 0.0;   // 極限重低音修正機械感
-            u.volume = 0.85; // 避開喇叭共振雜訊
+            u.rate = 0.8;   
+            u.pitch = 0.0;  
+            u.volume = 0.85;
         } else {
             u.rate = 1.0;  
             u.pitch = 0.9; 
@@ -142,7 +157,8 @@
 
     function handleStart() {
         wakeUpAudio();
-        if (voiceToggle.checked) synth.speak(new SpeechSynthesisUtterance(""));
+        // 為了讓 iPhone 隨時準備發聲，啟動時仍需解鎖語音權限
+        synth.speak(new SpeechSynthesisUtterance(""));
 
         if (!isPaused) {
             remaining = parseInt(inputField.value, 10);
@@ -154,6 +170,8 @@
         document.getElementById("startBtn").style.display = "none";
         document.getElementById("pauseBtn").style.display = "inline-block";
         document.getElementById("display").textContent = remaining;
+        
+        // 倒數開始的第一個數字報數
         speak(String(remaining));
 
         timerId = setInterval(() => {
@@ -163,7 +181,8 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm();
-                setTimeout(() => speak("時間到了"), 750); 
+                // 結束報數設為強制播放 (force = true)
+                setTimeout(() => speak("時間到了", true), 750); 
                 resetUI();
                 return;
             }
