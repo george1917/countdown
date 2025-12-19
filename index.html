@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>2暖心護理師計時器</title>
+    <title>護理師真人感計時器</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -79,9 +79,6 @@
     let audioCtx = null;
     const inputField = document.getElementById("seconds");
 
-    inputField.addEventListener('blur', () => { window.scrollTo(0, 0); });
-    inputField.addEventListener('focus', function() { this.value = ''; });
-
     function wakeUpAudio() {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -91,20 +88,20 @@
         if (!document.getElementById("voiceToggle").checked) return;
         wakeUpAudio();
         const now = audioCtx.currentTime;
-        // 強化鈴聲：清脆和弦
-        [880, 1100].forEach(freq => {
+        // 頻率調高至 1046Hz，增加清脆感與音量感
+        [1046, 1318].forEach(freq => {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.connect(gain); gain.connect(audioCtx.destination);
             osc.frequency.setValueAtTime(freq, now);
             gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(0.85, now + 0.05); 
+            gain.gain.linearRampToValueAtTime(0.9, now + 0.05); 
             gain.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
             osc.start(now); osc.stop(now + 1.2);
         });
     }
 
-    function getUtterance(text, isNursesTone = true) {
+    function createMsg(text, rate = 0.8, pitch = 0.9) {
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "zh-TW";
         const voices = synth.getVoices();
@@ -112,14 +109,8 @@
                        voices.find(v => v.lang.includes('zh-TW') && v.name.includes('Premium')) ||
                        voices.find(v => v.lang.includes('zh-TW'));
         if (target) u.voice = target;
-        
-        if (isNursesTone) {
-            u.rate = 0.7;   // 緩慢叮嚀
-            u.pitch = 0.8;  // 清亮親切
-        } else {
-            u.rate = 0.75;  // 報數節奏
-            u.pitch = 0.75;
-        }
+        u.rate = rate;
+        u.pitch = pitch;
         return u;
     }
 
@@ -130,15 +121,17 @@
         synth.cancel();
         
         if (isEnding) {
-            // 分段模擬真人語氣：先說「好囉」，停頓一下再說「休息一下」
-            const part1 = getUtterance("好囉");
-            const part2 = getUtterance("休息一下");
+            // 三段式發音模擬：好(快) -> 囉(平) -> 休息一下(慢)
+            const m1 = createMsg("好", 1.0, 1.0);
+            const m2 = createMsg("囉", 0.8, 0.9);
+            const m3 = createMsg("休息一下", 0.7, 0.8);
             
-            synth.speak(part1);
-            // 手動插入停頓感
-            setTimeout(() => { synth.speak(part2); }, 800);
+            synth.speak(m1);
+            synth.speak(m2);
+            setTimeout(() => { synth.speak(m3); }, 800);
         } else {
-            synth.speak(getUtterance(text, false));
+            // 報數使用較溫潤的語速
+            synth.speak(createMsg(text, 0.75, 0.8));
         }
     }
 
@@ -146,7 +139,6 @@
         inputField.blur();
         wakeUpAudio();
         synth.speak(new SpeechSynthesisUtterance(""));
-
         if (!isPaused) {
             remaining = parseInt(inputField.value, 10);
             if (isNaN(remaining) || remaining <= 0) return;
@@ -165,7 +157,6 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm();
-                // 延遲報讀口語化結尾
                 setTimeout(() => speak("", true), 1000); 
                 resetUI();
                 return;
@@ -173,16 +164,6 @@
             document.getElementById("display").textContent = remaining;
             speak(String(remaining));
         }, 1000);
-    }
-
-    function handlePause() {
-        clearInterval(timerId);
-        timerId = null;
-        isPaused = true;
-        synth.cancel();
-        document.getElementById("startBtn").innerText = "繼續";
-        document.getElementById("startBtn").style.display = "inline-block";
-        document.getElementById("pauseBtn").style.display = "none";
     }
 
     function handleReset() {
