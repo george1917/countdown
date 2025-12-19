@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>38專業復健陪伴 v38</title>
+    <title>39專業復健陪伴 v39</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -41,12 +41,12 @@
 <div class="container">
     <div class="nurse-header">
         <h3>專業復健陪伴</h3>
-        <p>強效警報 · 倒數同步</p>
+        <p>高端診所音場 · 溫柔叮嚀</p>
     </div>
     <div class="settings-container">
         <div class="settings-box">
             <input type="checkbox" id="voiceToggle" checked>
-            <label for="voiceToggle">結束時響鈴並說話</label>
+            <label for="voiceToggle">結束時音效並說話</label>
         </div>
         <div class="settings-box">
             <input type="checkbox" id="countToggle" checked>
@@ -70,15 +70,11 @@
     let audioCtx = null;
     let keepAliveNode = null;
 
-    function forceWakeAudio() {
-        if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
+    function initAudio() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
         if (!keepAliveNode) {
-            const buffer = audioCtx.createBuffer(1, 44100, 44100);
+            const buffer = audioCtx.createBuffer(1, 1, 22050);
             keepAliveNode = audioCtx.createBufferSource();
             keepAliveNode.buffer = buffer;
             keepAliveNode.loop = true;
@@ -88,34 +84,31 @@
         synth.cancel();
     }
 
-    // *** 強化鈴聲函數：多重頻率 + 三角波 + 高增益 ***
-    function playStrongAlarm() {
+    // *** 高端診所環境音：模擬頌缽共鳴 ***
+    function playClinicChime() {
         if (!document.getElementById("voiceToggle").checked || !audioCtx) return;
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        
         const now = audioCtx.currentTime;
-        // 頻率組合：高穿透力的和弦 (C5, E5, G5, C6, E6, G6)
-        const freqs = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98]; 
         
-        // 播放兩次連續警報
-        [0, 0.4].forEach((delay) => {
-            freqs.forEach((freq) => {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                // 改用三角波 (Triangle)，聲音比正弦波紮實且大聲
-                osc.type = 'triangle'; 
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                
-                osc.frequency.setValueAtTime(freq, now + delay);
-                gain.gain.setValueAtTime(0, now + delay);
-                // 提高音量增益至 0.6 (之前僅 0.2)
-                gain.gain.linearRampToValueAtTime(0.6, now + delay + 0.1); 
-                gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.8);
-                
-                osc.start(now + delay);
-                osc.stop(now + delay + 0.9);
-            });
+        // 使用 F-Major 9th 療癒系頻率疊加
+        const frequencies = [349.23, 523.25, 659.25, 1046.50]; 
+        
+        frequencies.forEach((freq, index) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'sine'; // 純淨正弦波
+            osc.frequency.setValueAtTime(freq, now);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            // 模擬敲擊包絡線：快起慢落
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(0.4 - (index * 0.05), now + 0.02); // 瞬時爆發
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 3.0); // 悠長消散
+            
+            osc.start(now);
+            osc.stop(now + 3.5);
         });
     }
 
@@ -140,7 +133,7 @@
     function handleStart() {
         const inputField = document.getElementById("seconds");
         inputField.blur();
-        forceWakeAudio();
+        initAudio();
 
         if (!isPaused) {
             remaining = parseInt(inputField.value, 10);
@@ -169,35 +162,30 @@
             timerId = null;
             document.getElementById("display").textContent = "0";
             
-            // 播放強化版警報
-            playStrongAlarm(); 
+            // 播放高級診所音效
+            playClinicChime(); 
             
+            // 讓聲音繚繞一會兒再叮嚀
             setTimeout(() => {
                 if (!document.getElementById("voiceToggle").checked) return;
                 synth.cancel();
                 let endMsg = new SpeechSynthesisUtterance("我們休息一下");
                 endMsg.lang = "zh-TW";
                 endMsg.voice = getVoice();
-                endMsg.rate = 0.55; 
+                endMsg.rate = 0.52; 
+                endMsg.pitch = 1.02;
                 synth.speak(endMsg);
-            }, 1200); // 稍微延後結束語，避免與強鈴聲重疊
+            }, 1200); 
             
             resetUI();
-            stopKeepAlive();
-        }
-    }
-
-    function stopKeepAlive() {
-        if(keepAliveNode) {
-            try { keepAliveNode.stop(); } catch(e) {}
-            keepAliveNode = null;
+            if(keepAliveNode) { keepAliveNode.stop(); keepAliveNode = null; }
         }
     }
 
     function handlePause() {
         clearInterval(timerId); timerId = null; isPaused = true;
         synth.cancel();
-        stopKeepAlive();
+        if(keepAliveNode) { keepAliveNode.stop(); keepAliveNode = null; }
         document.getElementById("startBtn").innerText = "繼續";
         document.getElementById("startBtn").style.display = "inline-block";
         document.getElementById("pauseBtn").style.display = "none";
@@ -206,7 +194,7 @@
     function handleReset() {
         clearInterval(timerId); timerId = null; remaining = 0; isPaused = false;
         synth.cancel();
-        stopKeepAlive();
+        if(keepAliveNode) { keepAliveNode.stop(); keepAliveNode = null; }
         document.getElementById("display").textContent = "0";
         resetUI();
     }
