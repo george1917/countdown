@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>專業復健陪伴 v27</title>
+    <title>28專業復健陪伴 v28</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -93,15 +93,15 @@
             gain.connect(audioCtx.destination);
             osc.frequency.setValueAtTime(freq, now);
             gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(0.15, now + 0.15); 
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 2.8);
+            gain.gain.linearRampToValueAtTime(0.18, now + 0.1); 
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 2.5);
             osc.start(now);
-            osc.stop(now + 3.0);
+            osc.stop(now + 2.6);
         });
     }
 
-    function createMsg(text, rate, pitch, hasBreath = false) {
-        const u = new SpeechSynthesisUtterance(hasBreath ? text + "。。。" : text);
+    function createMsg(text, rate, pitch, isEnding = false) {
+        const u = new SpeechSynthesisUtterance(isEnding ? text + "。。。" : text);
         u.lang = "zh-TW";
         const voices = synth.getVoices();
         const target = voices.find(v => v.name.includes('Meijia') && v.name.includes('Premium')) || 
@@ -117,9 +117,7 @@
     function handleStart() {
         inputField.blur();
         wakeUpAudio();
-        // 預熱
         synth.speak(new SpeechSynthesisUtterance("")); 
-
         if (!isPaused) {
             remaining = parseInt(inputField.value, 10);
             if (isNaN(remaining) || remaining <= 0) return;
@@ -134,33 +132,38 @@
     }
 
     function runTick() {
-        document.getElementById("display").textContent = remaining;
-        
-        if (remaining > 0) {
-            if (document.getElementById("countToggle").checked) {
-                synth.cancel(); 
-                
-                // 動態節奏調律：
-                // 雙位數 (>10)：高語速 (1.2) 搶先唸完，避免累積延遲
-                // 個位數 (<=10)：中低語速 (0.85) 並加入微幅延遲發聲，讓聲音結尾對齊數字跳動
-                let rate = (remaining > 10) ? 1.2 : 0.85;
-                let delay = (remaining > 10) ? 0 : 200; 
+        const display = document.getElementById("display");
+        const countEnabled = document.getElementById("countToggle").checked;
 
+        if (remaining > 0) {
+            display.textContent = remaining;
+            
+            if (countEnabled) {
+                synth.cancel();
+                // 動態節奏調律：
+                // 雙位數：1.35倍速快唸，解決「倒數比聲音快」
+                // 個位數：0.75倍速慢唸，解決「聲音比倒數快」
+                let rate = (remaining > 10) ? 1.35 : 0.75;
+                let pitch = (remaining <= 5) ? 1.15 : 1.1; // 最後5秒調高音調，增加鼓勵朝氣
+                
+                // 使用微型非對稱延遲
+                let triggerDelay = (remaining > 10) ? 0 : 150; 
                 setTimeout(() => {
-                    synth.speak(createMsg(String(remaining), rate, 1.1, false));
-                }, delay);
+                    synth.speak(createMsg(String(remaining), rate, pitch, false));
+                }, triggerDelay);
             }
             remaining--;
         } else {
             clearInterval(timerId);
             timerId = null;
+            display.textContent = "0";
             playAlarm(); 
             setTimeout(() => {
                 if (!document.getElementById("voiceToggle").checked) return;
                 synth.cancel();
-                // 結束語保持極致溫柔與收尾氣息
+                // 26歲護理師溫柔且具氣息的收尾
                 synth.speak(createMsg("我們休息一下", 0.52, 1.1, true));
-            }, 800);
+            }, 600);
             resetUI();
         }
     }
