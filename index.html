@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>26專業復健陪伴 v26</title>
+    <title>專業復健陪伴 v27</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -117,6 +117,7 @@
     function handleStart() {
         inputField.blur();
         wakeUpAudio();
+        // 預熱
         synth.speak(new SpeechSynthesisUtterance("")); 
 
         if (!isPaused) {
@@ -138,12 +139,16 @@
         if (remaining > 0) {
             if (document.getElementById("countToggle").checked) {
                 synth.cancel(); 
-                // 核心同步優化：針對雙位數(>10)自動加速，確保一秒內唸完
-                let dynamicRate = (remaining > 10) ? 1.15 : 0.9;
-                // 使用 setTimeout 微幅延遲發聲，避開系統 cancel 後的卡頓
+                
+                // 動態節奏調律：
+                // 雙位數 (>10)：高語速 (1.2) 搶先唸完，避免累積延遲
+                // 個位數 (<=10)：中低語速 (0.85) 並加入微幅延遲發聲，讓聲音結尾對齊數字跳動
+                let rate = (remaining > 10) ? 1.2 : 0.85;
+                let delay = (remaining > 10) ? 0 : 200; 
+
                 setTimeout(() => {
-                    synth.speak(createMsg(String(remaining), dynamicRate, 1.1, false));
-                }, 20);
+                    synth.speak(createMsg(String(remaining), rate, 1.1, false));
+                }, delay);
             }
             remaining--;
         } else {
@@ -153,7 +158,7 @@
             setTimeout(() => {
                 if (!document.getElementById("voiceToggle").checked) return;
                 synth.cancel();
-                // 結束語展現專業復健護理師的溫柔氣息共鳴
+                // 結束語保持極致溫柔與收尾氣息
                 synth.speak(createMsg("我們休息一下", 0.52, 1.1, true));
             }, 800);
             resetUI();
