@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <title>語音倒數計時器 Pro</title>
+    <title>語音鈴聲倒數器 Pro</title>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -18,10 +18,10 @@
             box-shadow: 0 15px 35px rgba(0,0,0,0.1);
         }
 
-        /* --- 說明區塊字體強力加大 --- */
+        /* --- 使用說明：極大字體與顯眼顏色 --- */
         .instruction-box {
-            background: #fff9db; /* 改成顯眼的淡黃色 */
-            border: 3px solid #f08c00;
+            background: #fff9db; 
+            border: 4px solid #f08c00;
             border-radius: 16px;
             padding: 25px !important;
             margin-bottom: 30px !important;
@@ -29,31 +29,30 @@
         }
         .instruction-box h3 {
             margin: 0 0 15px 0 !important;
-            font-size: 36px !important; /* 標題極大 */
+            font-size: 36px !important;
             color: #e67700 !important;
             font-weight: 900 !important;
         }
         .instruction-box p {
             margin: 12px 0 !important;
-            font-size: 26px !important; /* 內文極大 */
+            font-size: 26px !important;
             color: #2b2f33 !important;
             line-height: 1.4 !important;
             font-weight: 700 !important;
         }
 
-        /* --- 輸入與顯示 --- */
         input[type="number"] {
             width: 100%; font-size: 40px; padding: 20px; margin-bottom: 20px;
             border: 3px solid #adb5bd; border-radius: 16px; text-align: center;
         }
+
         #display {
-            font-size: 140px; /* 數字也加大 */
+            font-size: 150px; 
             font-weight: 900; color: #111827;
             margin: 10px 0; text-align: center;
             font-family: Arial, sans-serif;
         }
 
-        /* --- 按鈕 --- */
         .controls { display: flex; gap: 15px; }
         button {
             flex: 1; font-size: 28px; font-weight: 800; padding: 20px;
@@ -62,6 +61,7 @@
         #startBtn { background: #007aff; color: white; }
         #pauseBtn { background: #ff9500; color: white; display: none; }
         #resetBtn { background: #dee2e6; color: #495057; }
+        button:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
@@ -71,11 +71,10 @@
         <h3>【 使用說明 】</h3>
         <p>1. 輸入秒數</p>
         <p>2. 按下「開始」</p>
-        <p>3. 聲音與數字同步</p>
-        <p>4. 結束時發出嗶聲</p>
+        <p>3. 結束有鈴聲+語音</p>
     </div>
 
-    <input type="number" id="seconds" placeholder="輸入秒數" min="1" inputmode="numeric">
+    <input type="number" id="seconds" placeholder="秒數" min="1" inputmode="numeric">
     
     <div id="display">0</div>
 
@@ -92,25 +91,35 @@
     let isPaused = false;
     const synth = window.speechSynthesis;
 
+    // 核心修正：同步播報
     function speak(text) {
         synth.cancel(); 
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "zh-TW";
-        u.rate = 1.7; // 再次微調語速，確保同步
+        u.rate = 1.7; 
         setTimeout(() => synth.speak(u), 5);
     }
 
-    function playBeep() {
+    // 新增：強化鈴聲功能 (兩次短促的高音)
+    function playAlarm() {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.6);
+        
+        function beep(time, freq) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.type = 'square'; // 使用方波讓聲音更響亮像鈴聲
+            osc.frequency.setValueAtTime(freq, time);
+            gain.gain.setValueAtTime(0.3, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.3);
+            osc.start(time);
+            osc.stop(time + 0.3);
+        }
+
+        // 響兩聲鈴聲
+        beep(audioCtx.currentTime, 880);
+        beep(audioCtx.currentTime + 0.4, 880);
     }
 
     function handleStart() {
@@ -122,16 +131,21 @@
         document.getElementById("startBtn").style.display = "none";
         document.getElementById("pauseBtn").style.display = "inline-block";
         document.getElementById("seconds").disabled = true;
+        
         document.getElementById("display").textContent = remaining;
         speak(String(remaining));
+
         timerId = setInterval(() => {
             remaining--;
             if (remaining <= 0) {
                 clearInterval(timerId);
                 timerId = null;
                 document.getElementById("display").textContent = "0";
-                speak("時間到");
-                playBeep();
+                
+                // 結束時：先響鈴，再講話
+                playAlarm();
+                setTimeout(() => speak("時間到"), 800); 
+
                 resetUI();
                 return;
             }
