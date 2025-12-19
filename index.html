@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>14專業復健治療師計時器</title>
+    <title>15專業復健治療師計時器 v15</title>
     <style>
-        /* 畫面結構完全鎖定，不作變動 */
+        /* 畫面結構完全鎖定 */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
         body {
@@ -83,12 +83,12 @@
         if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
-    // 醫療舒壓鈴聲：B大調九和弦 (B4, D#5, F#5, A#5)
+    // 醫療診間清脆鈴聲 (C5, G5, C6)
     function playAlarm() {
         if (!document.getElementById("voiceToggle").checked) return;
         wakeUpAudio();
         const now = audioCtx.currentTime;
-        const freqs = [493.88, 622.25, 739.99, 932.33];
+        const freqs = [523.25, 783.99, 1046.50];
         freqs.forEach((freq) => {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -97,17 +97,16 @@
             gain.connect(audioCtx.destination);
             osc.frequency.setValueAtTime(freq, now);
             gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(0.2, now + 0.1); 
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
+            gain.gain.linearRampToValueAtTime(0.25, now + 0.08); 
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
             osc.start(now);
-            osc.stop(now + 2.0);
+            osc.stop(now + 1.8);
         });
     }
 
-    // 治療師核心優化：對標 26 歲專業語感
-    function createMsg(text, isEnding = false) {
-        // 在結尾增加不可見標點，觸發 iOS 語音引擎的擬真語調起伏
-        const u = new SpeechSynthesisUtterance(text + "。 ");
+    // 26 歲治療師風格調律
+    function createMsg(text, type = "normal") {
+        const u = new SpeechSynthesisUtterance(text);
         u.lang = "zh-TW";
         const voices = synth.getVoices();
         const target = voices.find(v => v.name.includes('Meijia') && v.name.includes('Premium')) || 
@@ -116,12 +115,14 @@
         if (target) u.voice = target;
         
         u.volume = 1.0;
-        if (isEnding) {
-            u.rate = 0.8;   // 叮嚀語速較慢，展現溫柔感
-            u.pitch = 1.08; // 26 歲清亮聲線
+        if (type === "ending") {
+            // 結束語語音：更慢、音調更高，模擬親切叮嚀
+            u.rate = 0.72;   
+            u.pitch = 1.15; 
         } else {
-            u.rate = 0.85;  // 報數節奏穩定清晰
-            u.pitch = 1.05;
+            // 報數數字：穩定且具備導引感
+            u.rate = 0.88;  
+            u.pitch = 1.10;
         }
         return u;
     }
@@ -152,11 +153,11 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm(); 
-                // 強制延遲，模擬真人在觀察患者反應後才開口叮嚀
+                // 關鍵優化：拉長間隔至 1 秒，模擬真人的換氣與觀察節奏
                 setTimeout(() => {
                     synth.cancel();
-                    synth.speak(createMsg("我們休息一下", true));
-                }, 800);
+                    synth.speak(createMsg("我們休息一下", "ending"));
+                }, 1000);
                 resetUI();
                 return;
             }
