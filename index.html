@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>10專業護理師計時器</title>
+    <title>11專業護理師計時器</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -13,58 +13,55 @@
             padding: env(safe-area-inset-top) 15px env(safe-area-inset-bottom) 15px;
         }
         .container {
-            width: 100%; max-width: 450px; padding: 15px; margin-top: auto; margin-bottom: auto;
+            width: 100%; max-width: 450px; padding: 20px; margin-top: auto; margin-bottom: auto;
             background: #ffffff; border-radius: 30px; box-shadow: 0 8px 30px rgba(0,0,0,0.1);
         }
         .instruction-box {
-            background: #fff9db; border: 3px solid #f08c00; border-radius: 20px;
-            padding: 15px 20px; margin-bottom: 15px; text-align: left;
+            background: #e7f5ff; border: 2px solid #339af0; border-radius: 20px;
+            padding: 15px 20px; margin-bottom: 20px; text-align: center;
         }
-        .instruction-box h3 { margin: 0 0 8px 0; font-size: 32px; color: #e67700; font-weight: 900; }
-        .instruction-box p { margin: 4px 0; font-size: 28px; color: #2b2f33; font-weight: 800; }
-        .settings-container { background: #f8f9fa; border-radius: 15px; padding: 8px 15px; margin-bottom: 12px; }
-        .settings-box { display: flex; align-items: center; justify-content: flex-start; gap: 12px; padding: 6px 0; }
-        .settings-box label { font-size: 24px; font-weight: 700; color: #444; cursor: pointer; }
-        .settings-box input[type="checkbox"] { transform: scale(1.8); cursor: pointer; }
+        .instruction-box h3 { margin: 0 0 5px 0; font-size: 28px; color: #1971c2; }
+        .instruction-box p { margin: 0; font-size: 22px; color: #495057; font-weight: bold; }
+        .settings-container { background: #f8f9fa; border-radius: 15px; padding: 10px; margin-bottom: 15px; }
+        .settings-box { display: flex; align-items: center; gap: 12px; padding: 5px; }
+        .settings-box label { font-size: 22px; font-weight: 700; color: #495057; }
+        input[type="checkbox"] { transform: scale(1.6); }
         input[type="number"] {
-            width: 100%; font-size: 38px; padding: 15px; margin-bottom: 12px;
-            border: 2px solid #c6c6c8; border-radius: 14px; text-align: center; outline: none; background: #f2f2f7;
+            width: 100%; font-size: 42px; padding: 15px; margin-bottom: 15px;
+            border: 2px solid #dee2e6; border-radius: 15px; text-align: center; outline: none; background: #f1f3f5;
         }
-        #display { font-size: 120px; font-weight: 900; color: #1c1e21; margin: 5px 0; text-align: center; font-variant-numeric: tabular-nums; line-height: 1; }
-        .controls { display: flex; gap: 10px; margin-top: 5px; }
+        #display { font-size: 110px; font-weight: 900; color: #212529; margin: 10px 0; text-align: center; font-variant-numeric: tabular-nums; }
+        .controls { display: flex; gap: 12px; }
         button {
-            flex: 1; font-size: 24px; font-weight: 700; padding: 18px 5px; border: none; border-radius: 18px; cursor: pointer;
-            white-space: nowrap; transition: transform 0.1s;
+            flex: 1; font-size: 24px; font-weight: 700; padding: 20px 5px; border: none; border-radius: 18px; cursor: pointer; transition: 0.1s;
         }
-        #startBtn { background: #007aff; color: white; }
-        #pauseBtn { background: #ff9500; color: white; display: none; }
-        #resetBtn { background: #e5e5ea; color: #1c1e21; }
-        button:active { transform: scale(0.92); }
+        #startBtn { background: #339af0; color: white; }
+        #pauseBtn { background: #fab005; color: white; display: none; }
+        #resetBtn { background: #adb5bd; color: white; }
+        button:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="instruction-box">
-        <h3>【 操作說明 】</h3>
-        <p>1.輸入秒數</p>
-        <p>2.按開始鍵</p>
-        <p>3.結束聽報數</p>
+        <h3>專業健康叮嚀</h3>
+        <p>請輸入秒數並開始</p>
     </div>
     <div class="settings-container">
         <div class="settings-box">
             <input type="checkbox" id="voiceToggle" checked>
-            <label for="voiceToggle">開啟結束鈴聲</label>
+            <label for="voiceToggle">結束鈴聲與語音</label>
         </div>
         <div class="settings-box">
             <input type="checkbox" id="countToggle" checked>
-            <label for="countToggle">倒數中要報數</label>
+            <label for="countToggle">倒數過程報數</label>
         </div>
     </div>
-    <input type="number" id="seconds" placeholder="請輸入秒數" min="1" inputmode="numeric">
+    <input type="number" id="seconds" placeholder="輸入秒數" inputmode="numeric">
     <div id="display">0</div>
     <div class="controls">
-        <button id="startBtn" onclick="handleStart()">開始倒數</button>
+        <button id="startBtn" onclick="handleStart()">開始</button>
         <button id="pauseBtn" onclick="handlePause()">暫停</button>
         <button id="resetBtn" onclick="handleReset()">重設</button>
     </div>
@@ -78,32 +75,33 @@
     let audioCtx = null;
     const inputField = document.getElementById("seconds");
 
-    inputField.addEventListener('blur', () => { window.scrollTo(0, 0); });
-    inputField.addEventListener('focus', function() { this.value = ''; });
-
     function wakeUpAudio() {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
+    // 模擬專業鋼琴和弦鈴聲
     function playAlarm() {
         if (!document.getElementById("voiceToggle").checked) return;
         wakeUpAudio();
         const now = audioCtx.currentTime;
-        // 清脆的大三和弦，大音量提醒
-        [784, 988, 1175].forEach(freq => {
+        const freqs = [659.25, 987.77, 1318.51]; // E5, B5, E6
+        freqs.forEach((freq, i) => {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = 'triangle'; // 使用較柔和的三角形波
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
             osc.frequency.setValueAtTime(freq, now);
             gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(1.0, now + 0.05); 
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
-            osc.start(now); osc.stop(now + 1.2);
+            gain.gain.linearRampToValueAtTime(0.5 / freqs.length, now + 0.1); 
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+            osc.start(now);
+            osc.stop(now + 1.6);
         });
     }
 
-    function createMsg(text, rate, pitch) {
+    function createMsg(text, rate = 0.75, pitch = 0.85) {
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "zh-TW";
         const voices = synth.getVoices();
@@ -117,30 +115,10 @@
         return u;
     }
 
-    function speakEndingSequence() {
-        if (!document.getElementById("voiceToggle").checked) return;
-        synth.cancel();
-
-        // 模擬真人對話：先交代狀態，再給予關懷
-        const m1 = createMsg("好，時間到了", 0.78, 0.8); 
-        synth.speak(m1);
-
-        setTimeout(() => {
-            const m2 = createMsg("辛苦了", 0.7, 0.85); 
-            synth.speak(m2);
-        }, 1500); 
-    }
-
-    function speak(text) {
-        if (!document.getElementById("countToggle").checked) return;
-        synth.cancel();
-        synth.speak(createMsg(text, 0.75, 0.8));
-    }
-
     function handleStart() {
         inputField.blur();
         wakeUpAudio();
-        synth.speak(new SpeechSynthesisUtterance(""));
+        synth.speak(new SpeechSynthesisUtterance("")); // 預熱
         if (!isPaused) {
             remaining = parseInt(inputField.value, 10);
             if (isNaN(remaining) || remaining <= 0) return;
@@ -150,7 +128,11 @@
         document.getElementById("startBtn").style.display = "none";
         document.getElementById("pauseBtn").style.display = "inline-block";
         document.getElementById("display").textContent = remaining;
-        speak(String(remaining));
+        
+        if (document.getElementById("countToggle").checked) {
+            synth.cancel();
+            synth.speak(createMsg(String(remaining)));
+        }
 
         timerId = setInterval(() => {
             remaining--;
@@ -158,14 +140,31 @@
                 clearInterval(timerId);
                 timerId = null;
                 document.getElementById("display").textContent = "0";
-                playAlarm();
-                setTimeout(speakEndingSequence, 800); 
+                playAlarm(); // 先響美妙的和弦鈴聲
+                setTimeout(() => {
+                    synth.cancel();
+                    // 結束語優化：一句話，專業、親切、自然
+                    synth.speak(createMsg("好，我們休息一下", 0.72, 0.85));
+                }, 800);
                 resetUI();
                 return;
             }
             document.getElementById("display").textContent = remaining;
-            speak(String(remaining));
+            if (document.getElementById("countToggle").checked) {
+                synth.cancel();
+                synth.speak(createMsg(String(remaining)));
+            }
         }, 1000);
+    }
+
+    function handlePause() {
+        clearInterval(timerId);
+        timerId = null;
+        isPaused = true;
+        synth.cancel();
+        document.getElementById("startBtn").innerText = "繼續";
+        document.getElementById("startBtn").style.display = "inline-block";
+        document.getElementById("pauseBtn").style.display = "none";
     }
 
     function handleReset() {
@@ -181,7 +180,7 @@
     function resetUI() {
         inputField.disabled = false;
         inputField.value = '';
-        document.getElementById("startBtn").innerText = "開始倒數";
+        document.getElementById("startBtn").innerText = "開始";
         document.getElementById("startBtn").style.display = "inline-block";
         document.getElementById("pauseBtn").style.display = "none";
     }
