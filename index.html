@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>語音鈴聲倒數器 iPhone 優化版</title>
+    <title>口語優化版倒數器</title>
     <style>
         * { 
             box-sizing: border-box; 
@@ -21,8 +21,6 @@
             background: #ffffff; border-radius: 30px;
             box-shadow: 0 8px 30px rgba(0,0,0,0.1);
         }
-
-        /* --- 使用說明：恢復藍橘配色並保持大字體 --- */
         .instruction-box {
             background: #fff9db; 
             border: 3px solid #f08c00;
@@ -33,54 +31,38 @@
         }
         .instruction-box h3 {
             margin: 0 0 10px 0 !important;
-            font-size: 32px !important; /* 適合長輩的大標題 */
+            font-size: 32px !important;
             color: #e67700 !important;
             font-weight: 900 !important;
         }
         .instruction-box p {
             margin: 8px 0 !important;
-            font-size: 24px !important; /* 適合長輩的大內文 */
+            font-size: 24px !important;
             color: #2b2f33 !important;
             line-height: 1.4 !important;
             font-weight: 700 !important;
         }
-
-        /* --- 輸入與顯示 --- */
         input[type="number"] {
             width: 100%; font-size: 36px; padding: 18px; margin-bottom: 15px;
             border: 2px solid #c6c6c8; border-radius: 14px; text-align: center;
             outline: none; background: #f2f2f7;
-            -webkit-appearance: none;
         }
-
         #display {
             font-size: 130px; 
             font-weight: 900; color: #1c1e21;
             margin: 10px 0; text-align: center;
             font-variant-numeric: tabular-nums;
         }
-
-        /* --- 按鈕：橫向排版與優雅配色 --- */
-        .controls { 
-            display: flex; 
-            gap: 12px; 
-        }
+        .controls { display: flex; gap: 12px; }
         button {
-            flex: 1; 
-            font-size: 22px; 
-            font-weight: 700; 
-            padding: 18px 5px; 
-            border: none; 
-            border-radius: 15px; 
-            cursor: pointer;
-            white-space: nowrap; 
-            transition: transform 0.1s, opacity 0.1s;
+            flex: 1; font-size: 22px; font-weight: 700; padding: 18px 5px; 
+            border: none; border-radius: 15px; cursor: pointer;
+            white-space: nowrap; transition: transform 0.1s;
         }
         #startBtn { background: #007aff; color: white; }
         #pauseBtn { background: #ff9500; color: white; display: none; }
         #resetBtn { background: #e5e5ea; color: #1c1e21; }
-        
-        button:active { transform: scale(0.92); opacity: 0.8; }
+        button:active { transform: scale(0.92); }
     </style>
 </head>
 <body>
@@ -90,7 +72,7 @@
         <h3>【 使用說明 】</h3>
         <p>1. 輸入秒數</p>
         <p>2. 按下「開始」</p>
-        <p>3. 結束有鈴聲+語音</p>
+        <p>3. 聽口語報數倒數</p>
     </div>
 
     <input type="number" id="seconds" placeholder="秒數" min="1" inputmode="numeric" autofocus>
@@ -111,15 +93,29 @@
     const synth = window.speechSynthesis;
     const inputField = document.getElementById("seconds");
 
-    // 針對 iPhone 的觸控優化
+    // 禁止 iPhone 手勢縮放
     document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
     window.onload = () => inputField.focus();
 
+    // 語音核心修正：讓聲音更自然
     function speak(text) {
         synth.cancel(); 
         const u = new SpeechSynthesisUtterance(text);
+        
+        // 1. 強制設定台灣繁體中文
         u.lang = "zh-TW";
-        u.rate = 1.7; 
+
+        // 2. 挑選 iPhone 上最優質的人聲 (尋找高品質人聲)
+        const voices = synth.getVoices();
+        const preferredVoice = voices.find(v => v.lang.includes('zh-TW') && v.name.includes('Premium')) || 
+                              voices.find(v => v.lang.includes('zh-TW'));
+        if (preferredVoice) u.voice = preferredVoice;
+
+        // 3. 調整參數：語速稍快(1.6)，音調稍降(0.9)增加穩定感
+        u.rate = 1.6; 
+        u.pitch = 0.9;
+        u.volume = 1.0;
+
         setTimeout(() => synth.speak(u), 5);
     }
 
@@ -137,15 +133,12 @@
             osc.start(time);
             osc.stop(time + 0.3);
         }
-        // 經典兩聲嗶嗶音
         beep(audioCtx.currentTime, 880);
         beep(audioCtx.currentTime + 0.4, 880);
     }
 
     function handleStart() {
-        // iPhone 啟動聲音權限
         const dummyCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
         if (!isPaused) {
             remaining = parseInt(inputField.value, 10);
             if (isNaN(remaining) || remaining <= 0) return;
@@ -165,7 +158,7 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm();
-                setTimeout(() => speak("時間到"), 800); 
+                setTimeout(() => speak("倒數結束"), 800); 
                 resetUI();
                 return;
             }
