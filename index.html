@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>真人語音計時器</title>
+    <title>真人感計時器 - 終極調音</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
@@ -15,7 +15,6 @@
             background: #ffffff; border-radius: 30px; box-shadow: 0 8px 30px rgba(0,0,0,0.1);
         }
         
-        /* 橘色方框：字體加大優化 */
         .instruction-box {
             background: #fff9db; border: 3px solid #f08c00; border-radius: 20px;
             padding: 20px 22px; margin-bottom: 20px; text-align: left;
@@ -95,7 +94,7 @@
         if (!silentNode) {
             silentNode = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            gain.gain.value = 0.001; 
+            gain.gain.value = 0.0001; 
             silentNode.connect(gain);
             gain.connect(audioCtx.destination);
             silentNode.start();
@@ -112,16 +111,18 @@
         osc.type = 'sine';
         osc.frequency.setValueAtTime(880, now);
         gain.gain.setValueAtTime(0, now);
-        gain.gain.linearRampToValueAtTime(0.5, now + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+        gain.gain.linearRampToValueAtTime(0.4, now + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
         osc.start(now);
-        osc.stop(now + 0.6);
+        osc.stop(now + 0.5);
     }
 
     function speak(text) {
         if (!voiceToggle.checked) return;
         synth.cancel(); 
-        const u = new SpeechSynthesisUtterance(text);
+        
+        // 加入句號強迫語調下降
+        const u = new SpeechSynthesisUtterance(text + "。");
         u.lang = "zh-TW";
 
         const voices = synth.getVoices();
@@ -131,14 +132,15 @@
         if (target) u.voice = target;
 
         if (isIOS) {
-            u.rate = 0.85;  // iPhone 專屬穩重語速
-            u.pitch = 0.1;  // 極限下壓音調去機械感
+            u.rate = 0.82;   // 緩慢而清晰
+            u.pitch = 0.05;  // 終極低頻，濾除所有尖銳機械音
+            u.volume = 0.8;  // 微降音量以換取更好的音質清晰度
         } else {
-            u.rate = 1.1;  
+            u.rate = 1.0;  
             u.pitch = 0.9; 
         }
         
-        setTimeout(() => synth.speak(u), 10);
+        setTimeout(() => synth.speak(u), 5);
     }
 
     function handleStart() {
@@ -164,7 +166,7 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm();
-                setTimeout(() => speak("時間到了"), 850); 
+                setTimeout(() => speak("時間到了"), 750); 
                 resetUI();
                 return;
             }
