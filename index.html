@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>專業復健陪伴 v43</title>
+    <title>44專業復健陪伴 v44</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -41,7 +41,7 @@
 <div class="container">
     <div class="nurse-header">
         <h3>專業復健陪伴</h3>
-        <p>Chrome 深度對位 · 高端質感版</p>
+        <p>瞬時發聲 · Chrome 完美對位</p>
     </div>
     <div class="settings-container">
         <div class="settings-box">
@@ -68,7 +68,6 @@
     let isPaused = false;
     const synth = window.speechSynthesis;
     let audioCtx = null;
-    let keepAliveNode = null;
 
     const isChromeDesktop = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor) && !/Mobile/.test(navigator.userAgent);
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
@@ -76,14 +75,6 @@
     function initAudio() {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') audioCtx.resume();
-        if (!keepAliveNode) {
-            const buffer = audioCtx.createBuffer(1, 1, 22050);
-            keepAliveNode = audioCtx.createBufferSource();
-            keepAliveNode.buffer = buffer;
-            keepAliveNode.loop = true;
-            keepAliveNode.connect(audioCtx.destination);
-            keepAliveNode.start(0);
-        }
         synth.cancel();
     }
 
@@ -116,42 +107,44 @@
     function speakNumber(num) {
         if (!document.getElementById("countToggle").checked) return;
         synth.cancel();
-        let u = new SpeechSynthesisUtterance(String(num));
+        
+        const u = new SpeechSynthesisUtterance(String(num));
         u.lang = "zh-TW";
         u.voice = getVoice();
         u.pitch = 1.05;
         
-        let rate, delay;
         if (isChromeDesktop) {
-            // *** Chrome 終極補償：大幅拉後發聲起跑 (550ms)，並極度壓慢語速 ***
-            rate = (num > 10) ? 0.68 : 0.55;
-            delay = (num > 10) ? 550 : 650;
+            // *** Chrome 終極同步邏輯：不再等待，直接起跑並大幅拉慢語速 ***
+            u.rate = (num > 10) ? 0.72 : 0.55;
+            synth.speak(u);
         } else if (isIOS) {
-            rate = (num > 10) ? 0.92 : 0.75;
-            delay = (num > 10) ? 0 : 250;
+            u.rate = (num > 10) ? 0.92 : 0.75;
+            let delay = (num > 10) ? 0 : 250;
+            setTimeout(() => { synth.speak(u); }, delay);
         } else {
-            rate = 0.8;
-            delay = 300;
+            u.rate = 0.8;
+            synth.speak(u);
         }
-        
-        setTimeout(() => { synth.speak(u); }, delay);
     }
 
     function handleStart() {
         const inputField = document.getElementById("seconds");
         inputField.blur();
         initAudio();
+        
         if (!isPaused) {
             remaining = parseInt(inputField.value, 10);
             if (isNaN(remaining) || remaining <= 0) return;
             inputField.disabled = true;
         }
         isPaused = false;
+        
         document.getElementById("startBtn").style.display = "none";
         document.getElementById("pauseBtn").style.display = "inline-block";
         
-        document.getElementById("display").textContent = remaining;
+        // *** 核心修復：按下瞬間先發聲，絕不等待計時器 ***
         speakNumber(remaining);
+        document.getElementById("display").textContent = remaining;
         remaining--;
         
         timerId = setInterval(runTick, 1000);
@@ -176,14 +169,12 @@
                 synth.speak(endMsg);
             }, 1200); 
             resetUI();
-            if(keepAliveNode) { keepAliveNode.stop(); keepAliveNode = null; }
         }
     }
 
     function handlePause() {
         clearInterval(timerId); timerId = null; isPaused = true;
         synth.cancel();
-        if(keepAliveNode) { keepAliveNode.stop(); keepAliveNode = null; }
         document.getElementById("startBtn").innerText = "繼續";
         document.getElementById("startBtn").style.display = "inline-block";
         document.getElementById("pauseBtn").style.display = "none";
@@ -192,7 +183,6 @@
     function handleReset() {
         clearInterval(timerId); timerId = null; remaining = 0; isPaused = false;
         synth.cancel();
-        if(keepAliveNode) { keepAliveNode.stop(); keepAliveNode = null; }
         document.getElementById("display").textContent = "0";
         resetUI();
     }
