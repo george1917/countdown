@@ -87,10 +87,8 @@ function speak(text) {
 }
 
 function startCountdown() {
-    if (timerId !== null) {
-        clearInterval(timerId);
-        timerId = null;
-    }
+    if (timerId !== null) clearInterval(timerId);
+    window.speechSynthesis.cancel(); // 取消前次語音
 
     let remaining = parseInt(document.getElementById("seconds").value, 10);
     if (!remaining || remaining <= 0) return;
@@ -102,20 +100,16 @@ function startCountdown() {
 
     timerId = setInterval(() => {
         remaining--;
+        display.textContent = remaining;
 
         if (remaining <= 0) {
             clearInterval(timerId);
             timerId = null;
-            display.textContent = "0";
             speak("倒數結束");
             return;
         }
 
-        display.textContent = remaining;
-
-        if (!window.speechSynthesis.speaking) {
-            speak(String(remaining));
-        }
+        speak(String(remaining));
     }, 1000);
 }
 </script>
