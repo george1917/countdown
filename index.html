@@ -73,45 +73,4 @@
         3. 畫面與聲音會一起倒數。<br>
         4. 結束時會自動提醒。
     </div>
-    <input type="number" id="seconds" min="1" inputmode="numeric" pattern="[0-9]*" placeholder="輸入秒數">
-    <button onclick="startCountdown()">開始</button>
-    <div id="display"></div>
-</div>
-<script>
-let timerId = null;
-
-function speak(text) {
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = "zh-TW";
-    window.speechSynthesis.speak(u);
-}
-
-function startCountdown() {
-    if (timerId !== null) clearInterval(timerId);
-    window.speechSynthesis.cancel(); // 取消前次語音
-
-    let remaining = parseInt(document.getElementById("seconds").value, 10);
-    if (!remaining || remaining <= 0) return;
-
-    const display = document.getElementById("display");
-
-    display.textContent = remaining;
-    speak(String(remaining));
-
-    timerId = setInterval(() => {
-        remaining--;
-        display.textContent = remaining;
-
-        if (remaining <= 0) {
-            clearInterval(timerId);
-            timerId = null;
-            speak("倒數結束");
-            return;
-        }
-
-        speak(String(remaining));
-    }, 1000);
-}
-</script>
-</body>
-</html>
+    <inpu
