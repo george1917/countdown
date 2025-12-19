@@ -15,13 +15,24 @@
             background: #ffffff; border-radius: 30px; box-shadow: 0 8px 30px rgba(0,0,0,0.1);
         }
         
-        /* 橘色方框：更新為純操作指導 */
         .instruction-box {
             background: #fff9db; border: 3px solid #f08c00; border-radius: 20px;
-            padding: 22px; margin-bottom: 25px; text-align: left;
+            padding: 18px 22px; margin-bottom: 20px; text-align: left;
         }
-        .instruction-box h3 { margin: 0 0 10px 0; font-size: 32px; color: #e67700; font-weight: 900; }
-        .instruction-box p { margin: 8px 0; font-size: 24px; color: #2b2f33; line-height: 1.4; font-weight: 700; }
+        .instruction-box h3 { margin: 0 0 8px 0; font-size: 28px; color: #e67700; font-weight: 900; }
+        .instruction-box p { 
+            margin: 4px 0; font-size: 22px; color: #2b2f33; font-weight: 700; 
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; /* 確保不折行 */
+        }
+        
+        /* 語音開關區塊 */
+        .settings-box {
+            display: flex; align-items: center; justify-content: center;
+            gap: 15px; margin-bottom: 15px; padding: 10px;
+            background: #f8f9fa; border-radius: 15px;
+        }
+        .settings-box label { font-size: 24px; font-weight: 700; color: #444; cursor: pointer; }
+        .settings-box input[type="checkbox"] { transform: scale(2); cursor: pointer; }
         
         input[type="number"] {
             width: 100%; font-size: 36px; padding: 18px; margin-bottom: 15px;
@@ -44,9 +55,14 @@
 <div class="container">
     <div class="instruction-box">
         <h3>【 操作說明 】</h3>
-        <p>1. 在方框打入要數的秒數</p>
-        <p>2. 按下藍色按鈕「開始」</p>
-        <p>3. 聽聲音數數，結束有鈴聲</p>
+        <p>1.輸入秒數</p>
+        <p>2.按開始鍵</p>
+        <p>3.結束聽報數</p>
+    </div>
+
+    <div class="settings-box">
+        <input type="checkbox" id="voiceToggle" checked>
+        <label for="voiceToggle">開啟報數與鈴聲</label>
     </div>
 
     <input type="number" id="seconds" placeholder="請輸入秒數" min="1" inputmode="numeric" autofocus>
@@ -66,8 +82,8 @@
     const synth = window.speechSynthesis;
     let audioCtx = null;
     const inputField = document.getElementById("seconds");
+    const voiceToggle = document.getElementById("voiceToggle");
 
-    // 點擊即清空，保持操作流暢
     inputField.addEventListener('focus', function() { this.value = ''; });
 
     window.onload = () => {
@@ -76,6 +92,7 @@
     };
 
     function playAlarm() {
+        if (!voiceToggle.checked) return; // 如果關閉則不發聲
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') audioCtx.resume();
         const osc = audioCtx.createOscillator();
@@ -91,30 +108,25 @@
     }
 
     function speak(text) {
+        if (!voiceToggle.checked) return; // 如果關閉則不報數
         synth.cancel(); 
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "zh-TW";
-        
         const voices = synth.getVoices();
-        // 優先搜尋系統內的高品質人聲
         const target = voices.find(v => v.lang.includes('zh-TW') && (v.name.includes('Premium') || v.name.includes('Enhanced'))) || 
                        voices.find(v => v.lang.includes('zh-TW'));
-        
         if (target) u.voice = target;
-
-        // 參數優化：語速微調至 1.5，音調 0.9，這在 iPhone 上通常聽起來最像真人
         u.rate = 1.5;  
         u.pitch = 0.9; 
-        u.volume = 1.0;
-
         setTimeout(() => synth.speak(u), 10);
     }
 
     function handleStart() {
-        // 解鎖音訊
-        synth.speak(new SpeechSynthesisUtterance(""));
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
+        if (voiceToggle.checked) {
+            synth.speak(new SpeechSynthesisUtterance(""));
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
 
         if (!isPaused) {
             remaining = parseInt(inputField.value, 10);
@@ -170,7 +182,6 @@
         document.getElementById("startBtn").innerText = "開始倒數";
         document.getElementById("startBtn").style.display = "inline-block";
         document.getElementById("pauseBtn").style.display = "none";
-        // 重設後自動聚焦，方便長輩直接輸入下一次
         setTimeout(() => inputField.focus(), 150);
     }
 </script>
