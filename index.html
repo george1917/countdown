@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>護理師計時器 - 極致語感</title>
+    <title>9專業護理師計時器</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -15,7 +15,6 @@
         .container {
             width: 100%; max-width: 450px; padding: 15px; margin-top: auto; margin-bottom: auto;
             background: #ffffff; border-radius: 30px; box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-            display: flex; flex-direction: column;
         }
         .instruction-box {
             background: #fff9db; border: 3px solid #f08c00; border-radius: 20px;
@@ -79,6 +78,9 @@
     let audioCtx = null;
     const inputField = document.getElementById("seconds");
 
+    inputField.addEventListener('blur', () => { window.scrollTo(0, 0); });
+    inputField.addEventListener('focus', function() { this.value = ''; });
+
     function wakeUpAudio() {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -88,13 +90,14 @@
         if (!document.getElementById("voiceToggle").checked) return;
         wakeUpAudio();
         const now = audioCtx.currentTime;
-        [1046, 1318].forEach(freq => {
+        // 使用更和諧、不突兀的專業音頻和弦 (E5, G5)
+        [659, 783].forEach(freq => {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.connect(gain); gain.connect(audioCtx.destination);
             osc.frequency.setValueAtTime(freq, now);
             gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(1.0, now + 0.02); 
+            gain.gain.linearRampToValueAtTime(0.8, now + 0.05); 
             gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
             osc.start(now); osc.stop(now + 1.2);
         });
@@ -104,7 +107,6 @@
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "zh-TW";
         const voices = synth.getVoices();
-        // 鎖定美佳 (高品質)
         const target = voices.find(v => v.name.includes('Meijia') && v.name.includes('Premium')) || 
                        voices.find(v => v.lang.includes('zh-TW') && v.name.includes('Premium')) ||
                        voices.find(v => v.lang.includes('zh-TW'));
@@ -115,35 +117,26 @@
         return u;
     }
 
-    // --- 極致分段發聲核心 ---
     function speakEndingSequence() {
         if (!document.getElementById("voiceToggle").checked) return;
-        
-        // 1. 清空所有排隊聲音，準備分段執行
         synth.cancel();
 
-        // 【動作一】 專業清脆的「好」
-        const m1 = createMsg("好", 1.2, 1.1); 
+        // 使用「完成囉」作為主結束語，這在 iPhone 上的發音共鳴比「好囉」更好
+        const m1 = createMsg("完成囉", 0.75, 0.8); 
         synth.speak(m1);
 
-        // 【動作二】 0.6秒後，發出溫柔且帶下沈感的「囉」
+        // 模擬真人停頓，觀察後再給予叮嚀
         setTimeout(() => {
-            const m2 = createMsg("囉", 0.4, 0.6); // 極慢語速模擬尾音拉長
+            const m2 = createMsg("記得休息", 0.7, 0.85); 
             synth.speak(m2);
-        }, 600); 
-
-        // 【動作三】 1.8秒後，進行溫柔叮嚀
-        setTimeout(() => {
-            const m3 = createMsg("休息一下", 0.75, 0.85); 
-            synth.speak(m3);
-        }, 1800); 
+        }, 1200); 
     }
 
     function speak(text) {
         if (!document.getElementById("countToggle").checked) return;
         synth.cancel();
-        // 報數使用厚實平穩的語速
-        synth.speak(createMsg(text, 0.7, 0.8));
+        // 報數維持沈穩
+        synth.speak(createMsg(text, 0.7, 0.85));
     }
 
     function handleStart() {
@@ -168,7 +161,6 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm();
-                // 鈴聲過後 1 秒開始護理師叮嚀
                 setTimeout(speakEndingSequence, 1000); 
                 resetUI();
                 return;
