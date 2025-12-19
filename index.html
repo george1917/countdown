@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>3護理師真人感計時器 - 極致語調版</title>
+    <title>7護理師專業計時器</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -88,7 +88,6 @@
         if (!document.getElementById("voiceToggle").checked) return;
         wakeUpAudio();
         const now = audioCtx.currentTime;
-        // 使用穿透力最強的純音頻和弦
         [988, 1318].forEach(freq => {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -115,28 +114,27 @@
         return u;
     }
 
-    // --- 極致優化：模擬真人護理師「語氣起伏」的發音流程 ---
+    // --- 護理師風格核心邏輯 ---
     function speakEndingSequence() {
         if (!document.getElementById("voiceToggle").checked) return;
         
-        // 分解動作：
-        // 1.「好」：短促高頻，引起注意
+        // 1.「好」：短促、專業、清亮
         const m1 = createMsg("好", 1.4, 1.2); 
-        // 2.「囉」：長尾低頻，產生安撫感
+        // 2.「囉」：大幅降調、模擬溫和收尾音
         const m2 = createMsg("囉", 0.5, 0.6);
-        // 3.「休息一下」：穩定中頻，溫柔叮嚀
+        // 3.「休息一下」：緩慢叮嚀語氣
         const m3 = createMsg("休息一下", 0.7, 0.85);
 
         synth.speak(m1);
         synth.speak(m2);
-        // 關鍵：插入 800ms 的物理呼吸間隔
+        // 插入呼吸感停頓
         setTimeout(() => { synth.speak(m3); }, 800);
     }
 
     function speak(text) {
         if (!document.getElementById("countToggle").checked) return;
         synth.cancel();
-        // 報數數字使用帶有「呼吸空間」的語速
+        // 穩定清晰的報數節奏
         synth.speak(createMsg(text, 0.7, 0.8));
     }
 
@@ -162,7 +160,6 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm();
-                // 確保鈴聲響完後的完美銜接
                 setTimeout(speakEndingSequence, 900); 
                 resetUI();
                 return;
