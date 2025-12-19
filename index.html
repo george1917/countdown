@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>護理師風格計時器</title>
+    <title>暖心護理師計時器</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -22,11 +22,13 @@
             padding: 15px 20px; margin-bottom: 15px; text-align: left;
         }
         .instruction-box h3 { margin: 0 0 8px 0; font-size: 32px; color: #e67700; font-weight: 900; }
-        .instruction-box p { margin: 4px 0; font-size: 28px; color: #2b2f33; font-weight: 800; white-space: nowrap; overflow: hidden; }
+        .instruction-box p { margin: 4px 0; font-size: 28px; color: #2b2f33; font-weight: 800; }
+        
         .settings-container { background: #f8f9fa; border-radius: 15px; padding: 8px 15px; margin-bottom: 12px; }
         .settings-box { display: flex; align-items: center; justify-content: flex-start; gap: 12px; padding: 6px 0; }
         .settings-box label { font-size: 24px; font-weight: 700; color: #444; cursor: pointer; }
         .settings-box input[type="checkbox"] { transform: scale(1.8); cursor: pointer; }
+        
         input[type="number"] {
             width: 100%; font-size: 38px; padding: 15px; margin-bottom: 12px;
             border: 2px solid #c6c6c8; border-radius: 14px; text-align: center; outline: none; background: #f2f2f7;
@@ -81,11 +83,8 @@
     const synth = window.speechSynthesis;
     let audioCtx = null;
     const inputField = document.getElementById("seconds");
-    const voiceToggle = document.getElementById("voiceToggle");
-    const countToggle = document.getElementById("countToggle");
 
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
+    // 鍵盤復位
     inputField.addEventListener('blur', () => { window.scrollTo(0, 0); });
     inputField.addEventListener('focus', function() { this.value = ''; });
 
@@ -94,27 +93,36 @@
         if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
+    // 強化版鈴聲：大聲且清亮
     function playAlarm() {
-        if (!voiceToggle.checked) return;
+        if (!document.getElementById("voiceToggle").checked) return;
         wakeUpAudio();
         const now = audioCtx.currentTime;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.frequency.setValueAtTime(660, now); // 調低頻率，聽起來更柔和
-        gain.gain.setValueAtTime(0, now);
-        gain.gain.linearRampToValueAtTime(0.25, now + 0.05); 
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
-        osc.start(now); osc.stop(now + 1.2);
+        
+        // 使用雙振盪器模擬清脆的和弦報警音
+        [880, 1046].forEach(freq => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.setValueAtTime(freq, now);
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(0.8, now + 0.05); // 音量加大至 0.8
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
+            osc.start(now);
+            osc.stop(now + 1.5);
+        });
     }
 
-    function speak(text, force = false) {
-        if (!countToggle.checked && !force) return;
-        if (force && !voiceToggle.checked) return;
+    function speak(text, isEnding = false) {
+        const countToggle = document.getElementById("countToggle").checked;
+        const voiceToggle = document.getElementById("voiceToggle").checked;
+        if (!countToggle && !isEnding) return;
+        if (isEnding && !voiceToggle) return;
 
         synth.cancel(); 
         
-        // 核心調校：使用隱形停頓模擬護理師溫和的語速起伏
+        // 護理師風格優化：使用字串前綴增加氣流感
         const u = new SpeechSynthesisUtterance(text); 
         u.lang = "zh-TW";
 
@@ -124,23 +132,19 @@
                        voices.find(v => v.lang.includes('zh-TW'));
         if (target) u.voice = target;
 
-        if (isIOS) {
-            // 護理師參數：溫暖清亮、末端柔和
-            u.rate = 0.78;   // 緩慢、穩定
-            u.pitch = 0.7;  // 溫暖飽滿的中高音
-            u.volume = 0.95; 
-        } else {
-            u.rate = 0.9; u.pitch = 1.1; 
+        if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+            u.rate = 0.72;   // 稍慢，減少生硬切斷感
+            u.pitch = 0.75;  // 飽滿溫馨的中頻
+            u.volume = 1.0; 
         }
         
-        // 增加微小延遲確保語音包能完整發揮「尾音」
-        setTimeout(() => synth.speak(u), 20);
+        // 關鍵：給予 50 毫秒的系統緩衝，避免發音開頭被切掉
+        setTimeout(() => synth.speak(u), 50);
     }
 
     function handleStart() {
         inputField.blur();
         wakeUpAudio();
-        // 預熱權限
         synth.speak(new SpeechSynthesisUtterance(""));
 
         if (!isPaused) {
@@ -163,8 +167,8 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm();
-                // 充滿溫情的結尾叮嚀
-                setTimeout(() => speak("時間到了喔，休息一下吧", true), 800); 
+                // 充滿溫情的完整語句
+                setTimeout(() => speak("時間到了喔，辛苦了，休息一下吧", true), 1000); 
                 resetUI();
                 return;
             }
