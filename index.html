@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>真人計時器 - 極致音質</title>
+    <title>電台主持人風格計時器</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -114,8 +114,8 @@
         if (force && !voiceToggle.checked) return;
 
         synth.cancel(); 
-        // 核心調音：加入引導停頓，讓語音包產生自然語感收尾
-        const u = new SpeechSynthesisUtterance(text + "... ");
+        // 關鍵：對標主持人報數時的「重音」與「下沉感」
+        const u = new SpeechSynthesisUtterance(text + "...。 ");
         u.lang = "zh-TW";
 
         const voices = synth.getVoices();
@@ -125,11 +125,12 @@
         if (target) u.voice = target;
 
         if (isIOS) {
-            u.rate = 0.78;   // 報數更加沈穩
-            u.pitch = 0.0;   // 聲帶下沉感優化
-            u.volume = 0.92; // 避免數位過載噪音
+            // 電台主持風格：沈穩緩慢、低頻飽滿
+            u.rate = 0.75;   
+            u.pitch = 0.0;   
+            u.volume = 0.95; 
         } else {
-            u.rate = 0.95; u.pitch = 1.0; 
+            u.rate = 0.9; u.pitch = 1.0; 
         }
         
         setTimeout(() => synth.speak(u), 10);
@@ -138,7 +139,6 @@
     function handleStart() {
         inputField.blur();
         wakeUpAudio();
-        // 語音引擎啟動權限
         synth.speak(new SpeechSynthesisUtterance(""));
 
         if (!isPaused) {
