@@ -6,40 +6,64 @@
     <title>真人語音計時器</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        /* 修正跑版：確保 html 和 body 不會產生多餘捲動 */
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            margin: 0;
+            background: #f2f2f7;
+        }
+
         body {
-            margin: 0; 
-            min-height: 100dvh;
             display: flex; 
             flex-direction: column;
             align-items: center;
-            background: #f2f2f7; 
+            justify-content: flex-start;
             font-family: -apple-system, "Microsoft JhengHei", sans-serif;
-            /* 同時避開頂部瀏海與底部工具列區域 */
             padding: env(safe-area-inset-top) 15px env(safe-area-inset-bottom) 15px;
         }
+
         .container {
-            width: 100%; max-width: 450px;
-            padding: 20px; margin: auto 0; /* 讓容器在可用空間內垂直置中，但受限於 padding */
-            background: #ffffff; border-radius: 30px; box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-            display: flex; flex-direction: column;
+            width: 100%;
+            max-width: 450px;
+            padding: 15px;
+            /* 讓內容在安全區域內垂直居中 */
+            margin-top: auto;
+            margin-bottom: auto;
+            background: #ffffff;
+            border-radius: 30px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
         }
+
         .instruction-box {
-            background: #fff9db; border: 3px solid #f08c00; border-radius: 20px;
-            padding: 15px 20px; margin-bottom: 15px; text-align: left;
+            background: #fff9db;
+            border: 3px solid #f08c00;
+            border-radius: 20px;
+            padding: 15px 20px;
+            margin-bottom: 15px;
+            text-align: left;
         }
         .instruction-box h3 { margin: 0 0 8px 0; font-size: 32px; color: #e67700; font-weight: 900; }
         .instruction-box p { 
             margin: 4px 0; font-size: 28px; color: #2b2f33; font-weight: 800; 
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            white-space: nowrap; overflow: hidden;
         }
         
         .settings-container {
-            background: #f8f9fa; border-radius: 15px;
-            padding: 8px 15px; margin-bottom: 12px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 8px 15px;
+            margin-bottom: 12px;
         }
         .settings-box {
-            display: flex; align-items: center; justify-content: flex-start;
-            gap: 12px; padding: 6px 0;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 12px;
+            padding: 6px 0;
         }
         .settings-box label { font-size: 24px; font-weight: 700; color: #444; cursor: pointer; }
         .settings-box input[type="checkbox"] { transform: scale(1.8); cursor: pointer; }
@@ -48,11 +72,13 @@
             width: 100%; font-size: 38px; padding: 15px; margin-bottom: 12px;
             border: 2px solid #c6c6c8; border-radius: 14px; text-align: center; outline: none; background: #f2f2f7;
         }
+
         #display { 
             font-size: 120px; font-weight: 900; color: #1c1e21; 
             margin: 5px 0; text-align: center; font-variant-numeric: tabular-nums; 
             line-height: 1;
         }
+
         .controls { display: flex; gap: 10px; margin-top: 5px; }
         button {
             flex: 1; font-size: 24px; font-weight: 700; padding: 18px 5px; border: none; border-radius: 18px; cursor: pointer;
@@ -85,7 +111,7 @@
         </div>
     </div>
 
-    <input type="number" id="seconds" placeholder="請輸入秒數" min="1" inputmode="numeric" autofocus>
+    <input type="number" id="seconds" placeholder="請輸入秒數" min="1" inputmode="numeric">
     <div id="display">0</div>
 
     <div class="controls">
@@ -108,7 +134,16 @@
 
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-    inputField.addEventListener('focus', function() { this.value = ''; });
+    // 核心修正：當輸入框失去焦點（鍵盤收起）時，強制將頁面滾回頂部
+    inputField.addEventListener('blur', function() {
+        window.scrollTo(0, 0);
+        document.body.scrollTop = 0;
+    });
+
+    // 點擊即清空
+    inputField.addEventListener('focus', function() { 
+        this.value = ''; 
+    });
 
     function wakeUpAudio() {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -166,6 +201,8 @@
     }
 
     function handleStart() {
+        // 開始時確保鍵盤收起並復位
+        inputField.blur();
         wakeUpAudio();
         synth.speak(new SpeechSynthesisUtterance(""));
 
@@ -224,10 +261,13 @@
         document.getElementById("startBtn").innerText = "開始倒數";
         document.getElementById("startBtn").style.display = "inline-block";
         document.getElementById("pauseBtn").style.display = "none";
-        setTimeout(() => inputField.focus(), 150);
+        // 不要自動 focus 避免鍵盤跳出造成跑版，讓使用者點擊後再清空
     }
     
-    window.onload = () => { synth.getVoices(); inputField.focus(); };
+    window.onload = () => { 
+        synth.getVoices(); 
+        window.scrollTo(0,0);
+    };
 </script>
 
 </body>
