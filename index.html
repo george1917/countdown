@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>自然語音倒數計時器</title>
+    <title>真人報數倒數器</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
@@ -41,14 +41,12 @@
 
 <div class="container">
     <div class="instruction-box">
-        <h3>【 操作說明 】</h3>
+        <h3>【 真人報數優化 】</h3>
         <p>1. 點擊輸入框會清空數字</p>
-        <p>2. 輸入秒數後按「開始」</p>
-        <p>3. 結束時嗶一聲並報數</p>
+        <p>2. 按下「開始」啟動真人語音</p>
     </div>
 
     <input type="number" id="seconds" placeholder="輸入秒數" min="1" inputmode="numeric" autofocus>
-    
     <div id="display">0</div>
 
     <div class="controls">
@@ -66,10 +64,8 @@
     let audioCtx = null;
     const inputField = document.getElementById("seconds");
 
-    // 核心修正：手動綁定 focus 事件以確保清空
-    inputField.addEventListener('focus', function() {
-        this.value = '';
-    });
+    // 點擊清空邏輯
+    inputField.addEventListener('focus', function() { this.value = ''; });
 
     window.onload = () => {
         synth.getVoices();
@@ -79,17 +75,14 @@
     function playAlarm() {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') audioCtx.resume();
-        
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.connect(gain); gain.connect(audioCtx.destination);
-        
         osc.type = 'sine';
         osc.frequency.setValueAtTime(880, audioCtx.currentTime);
         gain.gain.setValueAtTime(0, audioCtx.currentTime);
         gain.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.05);
         gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
-        
         osc.start();
         osc.stop(audioCtx.currentTime + 0.5);
     }
@@ -98,36 +91,40 @@
         synth.cancel(); 
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "zh-TW";
-        u.rate = 1.6;
-        u.pitch = 0.95;
         
+        // --- 深度優化人聲選擇 ---
         const voices = synth.getVoices();
-        const target = voices.find(v => v.lang.includes('zh-TW') && (v.name.includes('Premium') || v.name.includes('Enhanced'))) || 
-                       voices.find(v => v.lang.includes('zh-TW'));
-        if (target) u.voice = target;
         
-        synth.speak(u);
+        // 優先順序：1. 台灣高品質人聲 2. 台灣一般人聲 3. 香港/大陸高品質人聲 (作為墊底)
+        const target = voices.find(v => v.lang.includes('zh-TW') && (v.name.includes('Premium') || v.name.includes('Enhanced'))) || 
+                       voices.find(v => v.lang.includes('zh-TW')) ||
+                       voices.find(v => v.lang.includes('zh-HK') && v.name.includes('Premium'));
+        
+        if (target) u.voice = target;
+
+        // 模擬真人語氣參數
+        u.rate = 1.5;   // 報數稍微俐落一點
+        u.pitch = 0.92; // 降低音頻，聽起來比較沉穩像真人
+        u.volume = 1.0;
+
+        setTimeout(() => synth.speak(u), 10);
     }
 
     function handleStart() {
-        const unlockVoice = new SpeechSynthesisUtterance("");
-        synth.speak(unlockVoice);
+        // 解鎖音訊
+        synth.speak(new SpeechSynthesisUtterance(""));
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') audioCtx.resume();
 
         if (!isPaused) {
             remaining = parseInt(inputField.value, 10);
-            if (isNaN(remaining) || remaining <= 0) {
-                alert("請輸入秒數");
-                return;
-            }
+            if (isNaN(remaining) || remaining <= 0) return;
             inputField.disabled = true;
         }
         
         isPaused = false;
         document.getElementById("startBtn").style.display = "none";
         document.getElementById("pauseBtn").style.display = "inline-block";
-        
         document.getElementById("display").textContent = remaining;
         speak(String(remaining));
 
@@ -138,7 +135,7 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm();
-                setTimeout(() => speak("時間到"), 400); 
+                setTimeout(() => speak("時間到了"), 400); 
                 resetUI();
                 return;
             }
@@ -169,15 +166,11 @@
 
     function resetUI() {
         inputField.disabled = false;
-        // 確保重置時值為空，並再次聚焦觸發清空邏輯
         inputField.value = '';
         document.getElementById("startBtn").innerText = "開始倒數";
         document.getElementById("startBtn").style.display = "inline-block";
         document.getElementById("pauseBtn").style.display = "none";
-        
-        setTimeout(() => {
-            inputField.focus();
-        }, 150);
+        setTimeout(() => inputField.focus(), 150);
     }
 </script>
 
