@@ -42,12 +42,12 @@
 <div class="container">
     <div class="instruction-box">
         <h3>【 操作說明 】</h3>
-        <p>1. 點擊輸入框會自動清空</p>
+        <p>1. 點擊輸入框會清空數字</p>
         <p>2. 輸入秒數後按「開始」</p>
-        <p>3. 結束時會嗶一聲並報數</p>
+        <p>3. 結束時嗶一聲並報數</p>
     </div>
 
-    <input type="number" id="seconds" placeholder="輸入秒數" min="1" inputmode="numeric" autofocus onfocus="this.value=''">
+    <input type="number" id="seconds" placeholder="輸入秒數" min="1" inputmode="numeric" autofocus>
     
     <div id="display">0</div>
 
@@ -65,6 +65,11 @@
     const synth = window.speechSynthesis;
     let audioCtx = null;
     const inputField = document.getElementById("seconds");
+
+    // 核心修正：手動綁定 focus 事件以確保清空
+    inputField.addEventListener('focus', function() {
+        this.value = '';
+    });
 
     window.onload = () => {
         synth.getVoices();
@@ -164,11 +169,15 @@
 
     function resetUI() {
         inputField.disabled = false;
+        // 確保重置時值為空，並再次聚焦觸發清空邏輯
+        inputField.value = '';
         document.getElementById("startBtn").innerText = "開始倒數";
         document.getElementById("startBtn").style.display = "inline-block";
         document.getElementById("pauseBtn").style.display = "none";
-        // 核心修改：重置後自動聚焦
-        setTimeout(() => inputField.focus(), 100);
+        
+        setTimeout(() => {
+            inputField.focus();
+        }, 150);
     }
 </script>
 
