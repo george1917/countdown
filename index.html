@@ -14,7 +14,6 @@
             width: 92%; max-width: 450px; padding: 25px;
             background: #ffffff; border-radius: 30px; box-shadow: 0 8px 30px rgba(0,0,0,0.1);
         }
-        
         .instruction-box {
             background: #fff9db; border: 3px solid #f08c00; border-radius: 20px;
             padding: 18px 22px; margin-bottom: 20px; text-align: left;
@@ -22,10 +21,8 @@
         .instruction-box h3 { margin: 0 0 8px 0; font-size: 28px; color: #e67700; font-weight: 900; }
         .instruction-box p { 
             margin: 4px 0; font-size: 22px; color: #2b2f33; font-weight: 700; 
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; /* 確保不折行 */
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        
-        /* 語音開關區塊 */
         .settings-box {
             display: flex; align-items: center; justify-content: center;
             gap: 15px; margin-bottom: 15px; padding: 10px;
@@ -33,7 +30,6 @@
         }
         .settings-box label { font-size: 24px; font-weight: 700; color: #444; cursor: pointer; }
         .settings-box input[type="checkbox"] { transform: scale(2); cursor: pointer; }
-        
         input[type="number"] {
             width: 100%; font-size: 36px; padding: 18px; margin-bottom: 15px;
             border: 2px solid #c6c6c8; border-radius: 14px; text-align: center; outline: none; background: #f2f2f7;
@@ -84,6 +80,9 @@
     const inputField = document.getElementById("seconds");
     const voiceToggle = document.getElementById("voiceToggle");
 
+    // 偵測是否為 iPhone
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
     inputField.addEventListener('focus', function() { this.value = ''; });
 
     window.onload = () => {
@@ -92,7 +91,7 @@
     };
 
     function playAlarm() {
-        if (!voiceToggle.checked) return; // 如果關閉則不發聲
+        if (!voiceToggle.checked) return;
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') audioCtx.resume();
         const osc = audioCtx.createOscillator();
@@ -108,22 +107,32 @@
     }
 
     function speak(text) {
-        if (!voiceToggle.checked) return; // 如果關閉則不報數
+        if (!voiceToggle.checked) return;
         synth.cancel(); 
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "zh-TW";
+
+        // --- iPhone 專屬參數修正 ---
+        if (isIOS) {
+            u.rate = 1.2;  // iPhone 設慢一點，避免聽起來太急
+            u.pitch = 0.8; // iPhone 設低一點，增加聲音厚度
+        } else {
+            u.rate = 1.5;  // Chrome 標準語速
+            u.pitch = 0.9; // Chrome 標準音調
+        }
+
         const voices = synth.getVoices();
         const target = voices.find(v => v.lang.includes('zh-TW') && (v.name.includes('Premium') || v.name.includes('Enhanced'))) || 
                        voices.find(v => v.lang.includes('zh-TW'));
         if (target) u.voice = target;
-        u.rate = 1.5;  
-        u.pitch = 0.9; 
+        
         setTimeout(() => synth.speak(u), 10);
     }
 
     function handleStart() {
         if (voiceToggle.checked) {
-            synth.speak(new SpeechSynthesisUtterance(""));
+            const unlock = new SpeechSynthesisUtterance("");
+            synth.speak(unlock);
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (audioCtx.state === 'suspended') audioCtx.resume();
         }
@@ -180,6 +189,7 @@
         inputField.disabled = false;
         inputField.value = '';
         document.getElementById("startBtn").innerText = "開始倒數";
+        document.getElementById("startBtn").style.display = "none"; 
         document.getElementById("startBtn").style.display = "inline-block";
         document.getElementById("pauseBtn").style.display = "none";
         setTimeout(() => inputField.focus(), 150);
