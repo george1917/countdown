@@ -3,60 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>口語優化版倒數器</title>
+    <title>語音鈴聲倒數器 - 音訊修復版</title>
     <style>
-        * { 
-            box-sizing: border-box; 
-            -webkit-tap-highlight-color: transparent;
-        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
-            margin: 0; 
-            height: 100dvh;
-            display: flex; align-items: center; justify-content: center;
-            background: #f2f2f7;
-            font-family: -apple-system, "Microsoft JhengHei", sans-serif;
+            margin: 0; height: 100dvh; display: flex; align-items: center; justify-content: center;
+            background: #f2f2f7; font-family: -apple-system, "Microsoft JhengHei", sans-serif;
         }
         .container {
             width: 92%; max-width: 450px; padding: 25px;
-            background: #ffffff; border-radius: 30px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            background: #ffffff; border-radius: 30px; box-shadow: 0 8px 30px rgba(0,0,0,0.1);
         }
         .instruction-box {
-            background: #fff9db; 
-            border: 3px solid #f08c00;
-            border-radius: 20px;
-            padding: 22px !important;
-            margin-bottom: 25px !important;
-            text-align: left;
+            background: #fff9db; border: 3px solid #f08c00; border-radius: 20px;
+            padding: 22px; margin-bottom: 25px; text-align: left;
         }
-        .instruction-box h3 {
-            margin: 0 0 10px 0 !important;
-            font-size: 32px !important;
-            color: #e67700 !important;
-            font-weight: 900 !important;
-        }
-        .instruction-box p {
-            margin: 8px 0 !important;
-            font-size: 24px !important;
-            color: #2b2f33 !important;
-            line-height: 1.4 !important;
-            font-weight: 700 !important;
-        }
+        .instruction-box h3 { margin: 0 0 10px 0; font-size: 32px; color: #e67700; font-weight: 900; }
+        .instruction-box p { margin: 8px 0; font-size: 24px; color: #2b2f33; line-height: 1.4; font-weight: 700; }
         input[type="number"] {
             width: 100%; font-size: 36px; padding: 18px; margin-bottom: 15px;
-            border: 2px solid #c6c6c8; border-radius: 14px; text-align: center;
-            outline: none; background: #f2f2f7;
+            border: 2px solid #c6c6c8; border-radius: 14px; text-align: center; outline: none; background: #f2f2f7;
         }
-        #display {
-            font-size: 130px; 
-            font-weight: 900; color: #1c1e21;
-            margin: 10px 0; text-align: center;
-            font-variant-numeric: tabular-nums;
-        }
+        #display { font-size: 130px; font-weight: 900; color: #1c1e21; margin: 10px 0; text-align: center; font-variant-numeric: tabular-nums; }
         .controls { display: flex; gap: 12px; }
         button {
-            flex: 1; font-size: 22px; font-weight: 700; padding: 18px 5px; 
-            border: none; border-radius: 15px; cursor: pointer;
+            flex: 1; font-size: 22px; font-weight: 700; padding: 18px 5px; border: none; border-radius: 15px; cursor: pointer;
             white-space: nowrap; transition: transform 0.1s;
         }
         #startBtn { background: #007aff; color: white; }
@@ -72,7 +43,7 @@
         <h3>【 使用說明 】</h3>
         <p>1. 輸入秒數</p>
         <p>2. 按下「開始」</p>
-        <p>3. 聽口語報數倒數</p>
+        <p>3. 若無聲音，請確認手機非靜音模式</p>
     </div>
 
     <input type="number" id="seconds" placeholder="秒數" min="1" inputmode="numeric" autofocus>
@@ -93,34 +64,32 @@
     const synth = window.speechSynthesis;
     const inputField = document.getElementById("seconds");
 
-    // 禁止 iPhone 手勢縮放
-    document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
-    window.onload = () => inputField.focus();
+    // 解決 Chrome/iPhone 語音引擎初始化延遲
+    window.onload = () => {
+        inputField.focus();
+        // 預啟動：有些瀏覽器需要先叫用一次才會加載人聲列表
+        synth.getVoices();
+    };
 
-    // 語音核心修正：讓聲音更自然
     function speak(text) {
         synth.cancel(); 
         const u = new SpeechSynthesisUtterance(text);
-        
-        // 1. 強制設定台灣繁體中文
         u.lang = "zh-TW";
-
-        // 2. 挑選 iPhone 上最優質的人聲 (尋找高品質人聲)
+        u.rate = 1.7; 
+        u.pitch = 1.0;
+        
+        // 嘗試選取更好的台灣人聲
         const voices = synth.getVoices();
-        const preferredVoice = voices.find(v => v.lang.includes('zh-TW') && v.name.includes('Premium')) || 
-                              voices.find(v => v.lang.includes('zh-TW'));
-        if (preferredVoice) u.voice = preferredVoice;
+        const voice = voices.find(v => v.lang === 'zh-TW' && v.name.includes('Yating' || 'Mei-Jia')) || voices.find(v => v.lang === 'zh-TW');
+        if (voice) u.voice = voice;
 
-        // 3. 調整參數：語速稍快(1.6)，音調稍降(0.9)增加穩定感
-        u.rate = 1.6; 
-        u.pitch = 0.9;
-        u.volume = 1.0;
-
-        setTimeout(() => synth.speak(u), 5);
+        synth.speak(u);
     }
 
     function playAlarm() {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        
         function beep(time, freq) {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -138,11 +107,18 @@
     }
 
     function handleStart() {
+        // 【關鍵修復】在使用者點擊按鈕的瞬間，觸發一個無聲語音來解鎖音訊權限
+        speak(""); 
+        
+        // 啟動 AudioContext (iPhone 必要步驟)
         const dummyCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (dummyCtx.state === 'suspended') dummyCtx.resume();
+
         if (!isPaused) {
             remaining = parseInt(inputField.value, 10);
             if (isNaN(remaining) || remaining <= 0) return;
         }
+        
         isPaused = false;
         document.getElementById("startBtn").style.display = "none";
         document.getElementById("pauseBtn").style.display = "inline-block";
@@ -158,7 +134,7 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm();
-                setTimeout(() => speak("倒數結束"), 800); 
+                setTimeout(() => speak("時間到"), 800); 
                 resetUI();
                 return;
             }
