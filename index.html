@@ -2,13 +2,21 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <title>真人語音計時器</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
-            margin: 0; height: 100dvh; display: flex; align-items: center; justify-content: center;
-            background: #f2f2f7; font-family: -apple-system, "Microsoft JhengHei", sans-serif;
+            margin: 0; 
+            min-height: 100dvh; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            background: #f2f2f7; 
+            font-family: -apple-system, "Microsoft JhengHei", sans-serif;
+            /* 修正：自動避開 iPhone 頂部狀態列 */
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
         }
         .container {
             width: 92%; max-width: 450px; padding: 25px;
@@ -24,7 +32,6 @@
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
         
-        /* 雙開關排版 */
         .settings-container {
             background: #f8f9fa; border-radius: 15px;
             padding: 10px 15px; margin-bottom: 15px;
@@ -128,9 +135,7 @@
     }
 
     function speak(text, force = false) {
-        // 如果沒有勾選報數且不是強制播放(結尾)，則跳過
         if (!countToggle.checked && !force) return;
-        // 如果總開關(結束鈴聲)被關掉，則結尾語音也不播
         if (force && !voiceToggle.checked) return;
 
         synth.cancel(); 
@@ -157,7 +162,6 @@
 
     function handleStart() {
         wakeUpAudio();
-        // 為了讓 iPhone 隨時準備發聲，啟動時仍需解鎖語音權限
         synth.speak(new SpeechSynthesisUtterance(""));
 
         if (!isPaused) {
@@ -170,8 +174,6 @@
         document.getElementById("startBtn").style.display = "none";
         document.getElementById("pauseBtn").style.display = "inline-block";
         document.getElementById("display").textContent = remaining;
-        
-        // 倒數開始的第一個數字報數
         speak(String(remaining));
 
         timerId = setInterval(() => {
@@ -181,7 +183,6 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm();
-                // 結束報數設為強制播放 (force = true)
                 setTimeout(() => speak("時間到了", true), 750); 
                 resetUI();
                 return;
