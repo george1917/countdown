@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>復健治療師計時器</title>
+    <title>33專業復健陪伴 v33</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -30,9 +30,7 @@
         }
         #display { font-size: 130px; font-weight: 900; color: #212529; margin: 15px 0; text-align: center; font-variant-numeric: tabular-nums; line-height: 1; }
         .controls { display: flex; gap: 12px; }
-        button {
-            flex: 1; font-size: 24px; font-weight: 700; padding: 22px 10px; border: none; border-radius: 20px; cursor: pointer; transition: 0.1s;
-        }
+        button { flex: 1; font-size: 24px; font-weight: 700; padding: 22px 10px; border: none; border-radius: 20px; cursor: pointer; transition: 0.1s; }
         #startBtn { background: #339af0; color: white; }
         #pauseBtn { background: #fab005; color: white; display: none; }
         #resetBtn { background: #dee2e6; color: #495057; }
@@ -43,7 +41,7 @@
 <div class="container">
     <div class="nurse-header">
         <h3>專業復健陪伴</h3>
-        <p>瞬時啟動 · 鈴聲強化版</p>
+        <p>iOS 優化 · 自然同步版</p>
     </div>
     <div class="settings-container">
         <div class="settings-box">
@@ -71,34 +69,22 @@
     const synth = window.speechSynthesis;
     let audioCtx = null;
 
-    // iPhone 強制喚醒音訊
     function initAudioContext() {
-        if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
-        // 播放一個極短的靜音波形來解鎖播放權限
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
         const buffer = audioCtx.createBuffer(1, 1, 22050);
         const source = audioCtx.createBufferSource();
         source.buffer = buffer;
         source.connect(audioCtx.destination);
         source.start(0);
-        
-        // 預熱語音
         synth.cancel();
-        synth.speak(new SpeechSynthesisUtterance(""));
     }
 
     function playAlarm() {
-        if (!document.getElementById("voiceToggle").checked) return;
-        if (!audioCtx) return;
-        
+        if (!document.getElementById("voiceToggle").checked || !audioCtx) return;
         const now = audioCtx.currentTime;
-        // 調整為更具穿透力的 E大調九和弦 (針對手機小喇叭優化)
-        const freqs = [329.63, 415.30, 493.88, 659.25, 830.61]; 
-        freqs.forEach((freq, i) => {
+        const freqs = [329.63, 415.30, 493.88, 659.25]; // 清亮和弦
+        freqs.forEach((freq) => {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = 'sine';
@@ -107,40 +93,44 @@
             osc.frequency.setValueAtTime(freq, now);
             gain.gain.setValueAtTime(0, now);
             gain.gain.linearRampToValueAtTime(0.2, now + 0.1); 
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
             osc.start(now);
-            osc.stop(now + 2.1);
+            osc.stop(now + 1.6);
         });
     }
 
     function getVoice() {
         const voices = synth.getVoices();
-        return voices.find(v => v.name.includes('Meijia') && v.name.includes('Premium')) || 
-               voices.find(v => v.lang.includes('zh-TW') && v.name.includes('Premium')) ||
-               voices.find(v => v.lang.includes('zh-TW'));
+        // 優先找 Meijia，否則找任何台灣繁體中文
+        return voices.find(v => v.lang.includes('zh-TW') && v.name.includes('Premium')) || 
+               voices.find(v => v.lang.includes('zh-TW')) || 
+               voices[0];
     }
 
     function speakNumber(num) {
         if (!document.getElementById("countToggle").checked) return;
-        synth.cancel();
+        synth.cancel(); // 立即中斷前一秒，確保不堆疊
+        
         let u = new SpeechSynthesisUtterance(String(num));
         u.lang = "zh-TW";
         u.voice = getVoice();
-        u.pitch = 1.1;
-        u.rate = (num > 10) ? 1.7 : 0.6;
-        
-        if (num <= 10) {
-            setTimeout(() => { synth.speak(u); }, 100);
-        } else {
+        u.pitch = 1.0; 
+
+        // *** iOS 語速修正策略 ***
+        if (num > 10) {
+            // 針對 30-11 秒：從 1.7 下修至 1.45，維持速度但減少急促扭曲感
+            u.rate = 1.45; 
             synth.speak(u);
+        } else {
+            // 針對 10-1 秒：維持自然穩重
+            u.rate = 0.85; 
+            setTimeout(() => { synth.speak(u); }, 100);
         }
     }
 
     function handleStart() {
         const inputField = document.getElementById("seconds");
         inputField.blur();
-        
-        // *** 核心修復：在點擊瞬間初始化並喚醒音訊 ***
         initAudioContext();
 
         if (!isPaused) {
@@ -153,9 +143,9 @@
         document.getElementById("startBtn").style.display = "none";
         document.getElementById("pauseBtn").style.display = "inline-block";
 
-        // 立即發聲
-        speakNumber(remaining);
+        // 第一秒立即同步
         document.getElementById("display").textContent = remaining;
+        speakNumber(remaining);
         remaining--;
 
         timerId = setInterval(runTick, 1000);
@@ -177,10 +167,9 @@
                 let endMsg = new SpeechSynthesisUtterance("我們休息一下");
                 endMsg.lang = "zh-TW";
                 endMsg.voice = getVoice();
-                endMsg.rate = 0.52;
-                endMsg.pitch = 1.05;
+                endMsg.rate = 0.6; // 稍微提升結束語語速，避免 iPhone 處理太慢
                 synth.speak(endMsg);
-            }, 800);
+            }, 600);
             resetUI();
         }
     }
@@ -209,7 +198,6 @@
         document.getElementById("pauseBtn").style.display = "none";
     }
     
-    // 初始化語音列表
     window.onload = () => { synth.getVoices(); };
 </script>
 </body>
