@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>真人感語音倒數器</title>
+    <title>真人語音計時器 - 深度優化版</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
@@ -85,36 +85,30 @@
     inputField.addEventListener('focus', function() { this.value = ''; });
 
     function initAudio() {
-        if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
-    // 播放兩聲鈴聲
     function playAlarm() {
         if (!voiceToggle.checked) return;
         initAudio();
         
-        const playTone = (time) => {
+        const playTone = (time, freq) => {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
+            osc.connect(gain); gain.connect(audioCtx.destination);
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(880, time);
+            osc.frequency.setValueAtTime(freq, time);
             gain.gain.setValueAtTime(0, time);
             gain.gain.linearRampToValueAtTime(0.3, time + 0.05);
-            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.3);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.35);
             osc.start(time);
-            osc.stop(time + 0.3);
+            osc.stop(time + 0.4);
         };
 
         const now = audioCtx.currentTime;
-        playTone(now);      // 第一聲
-        playTone(now + 0.4); // 第二聲
+        playTone(now, 880);       // 第一聲高音
+        playTone(now + 0.45, 784); // 第二聲稍微低一點，聽起來更像完整的鈴響
     }
 
     function speak(text) {
@@ -124,15 +118,17 @@
         u.lang = "zh-TW";
 
         const voices = synth.getVoices();
-        const target = voices.find(v => v.lang.includes('zh-TW') && (v.name.includes('Premium') || v.name.includes('Enhanced') || v.name.includes('Meijia'))) || 
+        // 極精確匹配美佳高品質
+        const target = voices.find(v => v.name.includes('Meijia') && v.name.includes('Premium')) || 
+                       voices.find(v => v.lang.includes('zh-TW') && (v.name.includes('Premium') || v.name.includes('Enhanced'))) ||
                        voices.find(v => v.lang.includes('zh-TW'));
         if (target) u.voice = target;
 
         if (isIOS) {
-            u.rate = 1.0;   // 慢速報數
-            u.pitch = 0.5;  // 極低音調，徹底壓制尖銳感
+            u.rate = 0.95;  // 慢速但帶有節奏感
+            u.pitch = 0.3;  // 極低音頻修正機械感
         } else {
-            u.rate = 1.5;  
+            u.rate = 1.2;  
             u.pitch = 0.9; 
         }
         
@@ -140,9 +136,9 @@
     }
 
     function handleStart() {
-        initAudio(); // 強制解鎖音效權限
+        initAudio();
         if (voiceToggle.checked) {
-            synth.speak(new SpeechSynthesisUtterance("")); // 強制解鎖語音權限
+            synth.speak(new SpeechSynthesisUtterance(""));
         }
 
         if (!isPaused) {
@@ -164,8 +160,7 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm();
-                // 延遲報讀「時間到」，讓兩聲鈴聲先播完
-                setTimeout(() => speak("時間到了"), 1000); 
+                setTimeout(() => speak("時間到了"), 1100); 
                 resetUI();
                 return;
             }
