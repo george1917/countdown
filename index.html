@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>29專業復健陪伴 v29</title>
+    <title>專業復健陪伴 v30</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -36,7 +36,6 @@
         #startBtn { background: #339af0; color: white; }
         #pauseBtn { background: #fab005; color: white; display: none; }
         #resetBtn { background: #dee2e6; color: #495057; }
-        button:active { transform: scale(0.96); }
     </style>
 </head>
 <body>
@@ -44,7 +43,7 @@
 <div class="container">
     <div class="nurse-header">
         <h3>專業復健陪伴</h3>
-        <p>溫柔叮嚀 · 穩定陪伴</p>
+        <p>精準同步 · 溫柔陪伴</p>
     </div>
     <div class="settings-container">
         <div class="settings-box">
@@ -78,7 +77,6 @@
         if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
-    // 新鈴聲：C大調九和弦 (C4, E4, G4, B4, D5) - 高級專業診所質感
     function playAlarm() {
         if (!document.getElementById("voiceToggle").checked) return;
         wakeUpAudio();
@@ -93,24 +91,17 @@
             osc.frequency.setValueAtTime(freq, now);
             gain.gain.setValueAtTime(0, now);
             gain.gain.linearRampToValueAtTime(0.2, now + 0.1); 
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 3.0);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 2.5);
             osc.start(now);
-            osc.stop(now + 3.1);
+            osc.stop(now + 2.6);
         });
     }
 
-    function createMsg(text, rate, pitch, isEnding = false) {
-        const u = new SpeechSynthesisUtterance(isEnding ? text + "。。。" : text);
-        u.lang = "zh-TW";
+    function getVoice() {
         const voices = synth.getVoices();
-        const target = voices.find(v => v.name.includes('Meijia') && v.name.includes('Premium')) || 
-                       voices.find(v => v.lang.includes('zh-TW') && v.name.includes('Premium')) ||
-                       voices.find(v => v.lang.includes('zh-TW'));
-        if (target) u.voice = target;
-        u.volume = 1.0;
-        u.rate = rate;
-        u.pitch = pitch;
-        return u;
+        return voices.find(v => v.name.includes('Meijia') && v.name.includes('Premium')) || 
+               voices.find(v => v.lang.includes('zh-TW') && v.name.includes('Premium')) ||
+               voices.find(v => v.lang.includes('zh-TW'));
     }
 
     function handleStart() {
@@ -135,24 +126,24 @@
 
         if (remaining > 0) {
             display.textContent = remaining;
-            
             if (countEnabled) {
                 synth.cancel();
-                // 分段同步優化策略
-                let rate, delay;
+                // 核心同步邏輯拆分
+                let utterance = new SpeechSynthesisUtterance(String(remaining));
+                utterance.lang = "zh-TW";
+                utterance.voice = getVoice();
+                utterance.pitch = 1.1;
+
                 if (remaining > 10) {
-                    // 30-20秒：極速發音模式，解決「倒數比聲音快」
-                    rate = 1.6; 
-                    delay = 0; 
+                    // 雙位數：極速噴發模式，趕在視覺跳動前結束
+                    utterance.rate = 1.7; 
+                    synth.speak(utterance);
                 } else {
-                    // 5-0秒：慢速悠閒模式，解決「聲音比倒數快」
-                    rate = 0.65; 
-                    delay = 100; // 微幅延遲發聲，讓聲音跟螢幕跳動對齊
+                    // 個位數：慢速悠閒模式，拉長發音對齊一秒
+                    utterance.rate = 0.6; 
+                    // 微延遲發音起點，讓聲音「結束」的那一刻剛好跳下一個數字
+                    setTimeout(() => { synth.speak(utterance); }, 150);
                 }
-                
-                setTimeout(() => {
-                    synth.speak(createMsg(String(remaining), rate, 1.1, false));
-                }, delay);
             }
             remaining--;
         } else {
@@ -160,20 +151,23 @@
             timerId = null;
             display.textContent = "0";
             playAlarm(); 
+            // 結束語完全獨立處理
             setTimeout(() => {
                 if (!document.getElementById("voiceToggle").checked) return;
                 synth.cancel();
-                // 26歲治療師具備共鳴氣息的叮嚀
-                synth.speak(createMsg("我們休息一下", 0.52, 1.1, true));
-            }, 800);
+                let endMsg = new SpeechSynthesisUtterance("我們休息一下");
+                endMsg.lang = "zh-TW";
+                endMsg.voice = getVoice();
+                endMsg.rate = 0.52; // 護理師質感慢語速
+                endMsg.pitch = 1.05;
+                synth.speak(endMsg);
+            }, 700);
             resetUI();
         }
     }
 
     function handlePause() {
-        clearInterval(timerId);
-        timerId = null;
-        isPaused = true;
+        clearInterval(timerId); timerId = null; isPaused = true;
         synth.cancel();
         document.getElementById("startBtn").innerText = "繼續";
         document.getElementById("startBtn").style.display = "inline-block";
@@ -181,10 +175,7 @@
     }
 
     function handleReset() {
-        clearInterval(timerId);
-        timerId = null;
-        remaining = 0;
-        isPaused = false;
+        clearInterval(timerId); timerId = null; remaining = 0; isPaused = false;
         synth.cancel();
         document.getElementById("display").textContent = "0";
         resetUI();
@@ -199,6 +190,5 @@
     }
     window.onload = () => { synth.getVoices(); };
 </script>
-
 </body>
 </html>
