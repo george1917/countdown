@@ -80,10 +80,9 @@
 <script>
 let timerId = null;
 
-function speak(text, callback) {
+function speak(text) {
     const u = new SpeechSynthesisUtterance(text);
     u.lang = "zh-TW";
-    u.onend = callback;
     window.speechSynthesis.speak(u);
 }
 
@@ -98,19 +97,26 @@ function startCountdown() {
 
     const display = document.getElementById("display");
 
-    function tick() {
-        display.textContent = remaining;
+    display.textContent = remaining;
+    speak(String(remaining));
+
+    timerId = setInterval(() => {
+        remaining--;
+
         if (remaining <= 0) {
+            clearInterval(timerId);
+            timerId = null;
+            display.textContent = "0";
             speak("倒數結束");
             return;
         }
-        speak(String(remaining), () => {
-            remaining--;
-            tick();
-        });
-    }
 
-    tick();
+        display.textContent = remaining;
+
+        if (!window.speechSynthesis.speaking) {
+            speak(String(remaining));
+        }
+    }, 1000);
 }
 </script>
 </body>
