@@ -3,82 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>真人語音計時器</title>
+    <title>真人語音計時器 - 大師調音</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        
-        /* 修正跑版：確保 html 和 body 不會產生多餘捲動 */
-        html, body {
-            height: 100%;
-            overflow: hidden;
-            margin: 0;
-            background: #f2f2f7;
-        }
-
+        html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
         body {
-            display: flex; 
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
             font-family: -apple-system, "Microsoft JhengHei", sans-serif;
             padding: env(safe-area-inset-top) 15px env(safe-area-inset-bottom) 15px;
         }
-
         .container {
-            width: 100%;
-            max-width: 450px;
-            padding: 15px;
-            /* 讓內容在安全區域內垂直居中 */
-            margin-top: auto;
-            margin-bottom: auto;
-            background: #ffffff;
-            border-radius: 30px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
+            width: 100%; max-width: 450px; padding: 15px; margin-top: auto; margin-bottom: auto;
+            background: #ffffff; border-radius: 30px; box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            display: flex; flex-direction: column;
         }
-
         .instruction-box {
-            background: #fff9db;
-            border: 3px solid #f08c00;
-            border-radius: 20px;
-            padding: 15px 20px;
-            margin-bottom: 15px;
-            text-align: left;
+            background: #fff9db; border: 3px solid #f08c00; border-radius: 20px;
+            padding: 15px 20px; margin-bottom: 15px; text-align: left;
         }
         .instruction-box h3 { margin: 0 0 8px 0; font-size: 32px; color: #e67700; font-weight: 900; }
-        .instruction-box p { 
-            margin: 4px 0; font-size: 28px; color: #2b2f33; font-weight: 800; 
-            white-space: nowrap; overflow: hidden;
-        }
-        
-        .settings-container {
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 8px 15px;
-            margin-bottom: 12px;
-        }
-        .settings-box {
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            gap: 12px;
-            padding: 6px 0;
-        }
+        .instruction-box p { margin: 4px 0; font-size: 28px; color: #2b2f33; font-weight: 800; white-space: nowrap; overflow: hidden; }
+        .settings-container { background: #f8f9fa; border-radius: 15px; padding: 8px 15px; margin-bottom: 12px; }
+        .settings-box { display: flex; align-items: center; justify-content: flex-start; gap: 12px; padding: 6px 0; }
         .settings-box label { font-size: 24px; font-weight: 700; color: #444; cursor: pointer; }
         .settings-box input[type="checkbox"] { transform: scale(1.8); cursor: pointer; }
-        
         input[type="number"] {
             width: 100%; font-size: 38px; padding: 15px; margin-bottom: 12px;
             border: 2px solid #c6c6c8; border-radius: 14px; text-align: center; outline: none; background: #f2f2f7;
         }
-
-        #display { 
-            font-size: 120px; font-weight: 900; color: #1c1e21; 
-            margin: 5px 0; text-align: center; font-variant-numeric: tabular-nums; 
-            line-height: 1;
-        }
-
+        #display { font-size: 120px; font-weight: 900; color: #1c1e21; margin: 5px 0; text-align: center; font-variant-numeric: tabular-nums; line-height: 1; }
         .controls { display: flex; gap: 10px; margin-top: 5px; }
         button {
             flex: 1; font-size: 24px; font-weight: 700; padding: 18px 5px; border: none; border-radius: 18px; cursor: pointer;
@@ -134,28 +87,12 @@
 
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-    // 核心修正：當輸入框失去焦點（鍵盤收起）時，強制將頁面滾回頂部
-    inputField.addEventListener('blur', function() {
-        window.scrollTo(0, 0);
-        document.body.scrollTop = 0;
-    });
-
-    // 點擊即清空
-    inputField.addEventListener('focus', function() { 
-        this.value = ''; 
-    });
+    inputField.addEventListener('blur', () => { window.scrollTo(0, 0); });
+    inputField.addEventListener('focus', function() { this.value = ''; });
 
     function wakeUpAudio() {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') audioCtx.resume();
-        if (!silentNode) {
-            silentNode = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            gain.gain.value = 0.0001; 
-            silentNode.connect(gain);
-            gain.connect(audioCtx.destination);
-            silentNode.start();
-        }
     }
 
     function playAlarm() {
@@ -165,13 +102,11 @@
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.type = 'sine';
         osc.frequency.setValueAtTime(880, now);
         gain.gain.setValueAtTime(0, now);
         gain.gain.linearRampToValueAtTime(0.4, now + 0.02);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-        osc.start(now);
-        osc.stop(now + 0.5);
+        osc.start(now); osc.stop(now + 0.5);
     }
 
     function speak(text, force = false) {
@@ -179,32 +114,37 @@
         if (force && !voiceToggle.checked) return;
 
         synth.cancel(); 
-        const u = new SpeechSynthesisUtterance(text + " ");
+        // 關鍵調音 1：加入微小停頓標點，讓高品質語音包觸發自然尾音
+        const u = new SpeechSynthesisUtterance(text + ", ");
         u.lang = "zh-TW";
 
         const voices = synth.getVoices();
+        // 優先搜尋「美佳 (高品質)」
         const target = voices.find(v => v.name.includes('Meijia') && v.name.includes('Premium')) || 
-                       voices.find(v => v.lang.includes('zh-TW') && (v.name.includes('Premium') || v.name.includes('Enhanced'))) ||
+                       voices.find(v => v.lang.includes('zh-TW') && v.name.includes('Premium')) ||
                        voices.find(v => v.lang.includes('zh-TW'));
         if (target) u.voice = target;
 
         if (isIOS) {
-            u.rate = 0.8;   
-            u.pitch = 0.0;  
-            u.volume = 0.85;
+            // 關鍵調音 2：極限參數，消除金屬感
+            u.rate = 0.82;   // 稍慢，讓每個字更飽滿
+            u.pitch = 0.01;  // 極限低音，消除尖銳感
+            u.volume = 1.0;  // 滿量輸出以補償低音
         } else {
-            u.rate = 1.0;  
-            u.pitch = 0.9; 
+            u.rate = 1.0; u.pitch = 1.0; 
         }
         
-        setTimeout(() => synth.speak(u), 5);
+        // 關鍵調音 3：微小延遲，確保 iPhone 緩衝區乾淨
+        setTimeout(() => synth.speak(u), 10);
     }
 
     function handleStart() {
-        // 開始時確保鍵盤收起並復位
         inputField.blur();
         wakeUpAudio();
-        synth.speak(new SpeechSynthesisUtterance(""));
+        // 預熱語音：解決 iPhone 第一秒沒聲音或爆音的問題
+        const warmup = new SpeechSynthesisUtterance("");
+        warmup.volume = 0;
+        synth.speak(warmup);
 
         if (!isPaused) {
             remaining = parseInt(inputField.value, 10);
@@ -216,7 +156,9 @@
         document.getElementById("startBtn").style.display = "none";
         document.getElementById("pauseBtn").style.display = "inline-block";
         document.getElementById("display").textContent = remaining;
-        speak(String(remaining));
+        
+        // 第一秒報數
+        setTimeout(() => speak(String(remaining)), 100);
 
         timerId = setInterval(() => {
             remaining--;
@@ -225,7 +167,7 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm();
-                setTimeout(() => speak("時間到了", true), 750); 
+                setTimeout(() => speak("時間到了", true), 600); 
                 resetUI();
                 return;
             }
@@ -249,7 +191,6 @@
         timerId = null;
         remaining = 0;
         isPaused = false;
-        if (silentNode) { silentNode.stop(); silentNode = null; }
         synth.cancel();
         document.getElementById("display").textContent = "0";
         resetUI();
@@ -261,13 +202,9 @@
         document.getElementById("startBtn").innerText = "開始倒數";
         document.getElementById("startBtn").style.display = "inline-block";
         document.getElementById("pauseBtn").style.display = "none";
-        // 不要自動 focus 避免鍵盤跳出造成跑版，讓使用者點擊後再清空
     }
     
-    window.onload = () => { 
-        synth.getVoices(); 
-        window.scrollTo(0,0);
-    };
+    window.onload = () => { synth.getVoices(); };
 </script>
 
 </body>
