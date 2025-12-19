@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>真人感語音倒數計時器</title>
+    <title>真人語音倒數器</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
@@ -14,6 +14,8 @@
             width: 92%; max-width: 450px; padding: 25px;
             background: #ffffff; border-radius: 30px; box-shadow: 0 8px 30px rgba(0,0,0,0.1);
         }
+        
+        /* 橘色方框：更新為純操作指導 */
         .instruction-box {
             background: #fff9db; border: 3px solid #f08c00; border-radius: 20px;
             padding: 22px; margin-bottom: 25px; text-align: left;
@@ -42,11 +44,12 @@
 <div class="container">
     <div class="instruction-box">
         <h3>【 操作說明 】</h3>
-        <p>1. 點擊輸入框會清空內容</p>
-        <p>2. 結束時嗶一聲並報數</p>
+        <p>1. 在方框打入要數的秒數</p>
+        <p>2. 按下藍色按鈕「開始」</p>
+        <p>3. 聽聲音數數，結束有鈴聲</p>
     </div>
 
-    <input type="number" id="seconds" placeholder="輸入秒數" min="1" inputmode="numeric" autofocus>
+    <input type="number" id="seconds" placeholder="請輸入秒數" min="1" inputmode="numeric" autofocus>
     <div id="display">0</div>
 
     <div class="controls">
@@ -64,7 +67,7 @@
     let audioCtx = null;
     const inputField = document.getElementById("seconds");
 
-    // 修正：確保 focus 時清空
+    // 點擊即清空，保持操作流暢
     inputField.addEventListener('focus', function() { this.value = ''; });
 
     window.onload = () => {
@@ -81,7 +84,7 @@
         osc.type = 'sine';
         osc.frequency.setValueAtTime(880, audioCtx.currentTime);
         gain.gain.setValueAtTime(0, audioCtx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.4, audioCtx.currentTime + 0.05);
+        gain.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.05);
         gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
         osc.start();
         osc.stop(audioCtx.currentTime + 0.5);
@@ -92,31 +95,24 @@
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "zh-TW";
         
-        // --- 核心優化：優先匹配高品質人聲 ---
         const voices = synth.getVoices();
-        const preferred = ["Meijia (Premium)", "Meijia", "Sinji", "Yating", "Li-Mu"];
-        let targetVoice = null;
-
-        for (let name of preferred) {
-            targetVoice = voices.find(v => v.name.includes(name) && v.lang.includes('zh-TW'));
-            if (targetVoice) break;
-        }
+        // 優先搜尋系統內的高品質人聲
+        const target = voices.find(v => v.lang.includes('zh-TW') && (v.name.includes('Premium') || v.name.includes('Enhanced'))) || 
+                       voices.find(v => v.lang.includes('zh-TW'));
         
-        if (!targetVoice) targetVoice = voices.find(v => v.lang.includes('zh-TW'));
-        if (targetVoice) u.voice = targetVoice;
+        if (target) u.voice = target;
 
-        // 模擬真人語調：語速快一點較不機械，音調微降較穩重
-        u.rate = 1.6;  
-        u.pitch = 0.85; 
+        // 參數優化：語速微調至 1.5，音調 0.9，這在 iPhone 上通常聽起來最像真人
+        u.rate = 1.5;  
+        u.pitch = 0.9; 
         u.volume = 1.0;
 
         setTimeout(() => synth.speak(u), 10);
     }
 
     function handleStart() {
-        // iPhone 聲音授權
-        const unlock = new SpeechSynthesisUtterance("");
-        synth.speak(unlock);
+        // 解鎖音訊
+        synth.speak(new SpeechSynthesisUtterance(""));
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') audioCtx.resume();
 
@@ -174,6 +170,7 @@
         document.getElementById("startBtn").innerText = "開始倒數";
         document.getElementById("startBtn").style.display = "inline-block";
         document.getElementById("pauseBtn").style.display = "none";
+        // 重設後自動聚焦，方便長輩直接輸入下一次
         setTimeout(() => inputField.focus(), 150);
     }
 </script>
