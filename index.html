@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>專業復健陪伴 v23</title>
+    <title>24專業復健陪伴 v24</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -16,26 +16,24 @@
             width: 100%; max-width: 450px; padding: 25px; margin-top: auto; margin-bottom: auto;
             background: #ffffff; border-radius: 35px; box-shadow: 0 10px 40px rgba(0,0,0,0.08);
         }
-        .nurse-header { text-align: center; margin-bottom: 20px; }
-        .nurse-header h3 { margin: 0; font-size: 28px; color: #1c7ed6; letter-spacing: 1px; }
-        .nurse-header p { margin: 8px 0 0; font-size: 20px; color: #868e96; font-weight: 500; }
-        .settings-container { background: #f8f9fa; border-radius: 20px; padding: 15px; margin-bottom: 20px; }
-        .settings-box { display: flex; align-items: center; gap: 15px; padding: 8px 0; }
-        .settings-box label { font-size: 22px; font-weight: 700; color: #495057; cursor: pointer; }
-        input[type="checkbox"] { transform: scale(1.8); cursor: pointer; }
+        .nurse-header { text-align: center; margin-bottom: 15px; }
+        .nurse-header h3 { margin: 0; font-size: 26px; color: #1c7ed6; letter-spacing: 1px; }
+        .nurse-header p { margin: 5px 0 0; font-size: 18px; color: #868e96; }
         input[type="number"] {
-            width: 100%; font-size: 48px; padding: 18px; margin-bottom: 20px;
+            width: 100%; font-size: 40px; padding: 15px; margin-bottom: 15px;
             border: 2px solid #e9ecef; border-radius: 20px; text-align: center; outline: none; background: #f8f9fa;
             color: #212529; font-weight: bold;
         }
-        #display { font-size: 130px; font-weight: 900; color: #212529; margin: 15px 0; text-align: center; font-variant-numeric: tabular-nums; line-height: 1; }
+        #display { font-size: 140px; font-weight: 900; color: #212529; margin: 10px 0; text-align: center; font-variant-numeric: tabular-nums; line-height: 1; }
         .controls { display: flex; gap: 12px; }
         button {
-            flex: 1; font-size: 24px; font-weight: 700; padding: 22px 10px; border: none; border-radius: 18px; cursor: pointer; transition: 0.1s;
+            flex: 1; font-size: 22px; font-weight: 700; padding: 20px 10px; border: none; border-radius: 18px; cursor: pointer;
         }
         #startBtn { background: #339af0; color: white; }
         #pauseBtn { background: #fab005; color: white; display: none; }
         #resetBtn { background: #dee2e6; color: #495057; }
+        .settings-box { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; font-size: 18px; font-weight: bold; color: #495057; }
+        input[type="checkbox"] { transform: scale(1.5); }
     </style>
 </head>
 <body>
@@ -43,21 +41,15 @@
 <div class="container">
     <div class="nurse-header">
         <h3>專業復健陪伴</h3>
-        <p>溫柔叮嚀 · 穩定陪伴</p>
+        <p>精準同步 · 溫柔導引</p>
     </div>
     
-    <div class="settings-container">
-        <div class="settings-box">
-            <input type="checkbox" id="voiceToggle" checked>
-            <label for="voiceToggle">結束時響鈴並說話</label>
-        </div>
-        <div class="settings-box">
-            <input type="checkbox" id="countToggle" checked>
-            <label for="countToggle">倒數時唸出數字</label>
-        </div>
+    <div class="settings-box">
+        <input type="checkbox" id="countToggle" checked>
+        <label for="countToggle">倒數時唸出數字</label>
     </div>
 
-    <input type="number" id="seconds" placeholder="請設定秒數" inputmode="numeric">
+    <input type="number" id="seconds" placeholder="設定秒數" inputmode="numeric">
     <div id="display">0</div>
     <div class="controls">
         <button id="startBtn" onclick="handleStart()">開始</button>
@@ -79,9 +71,8 @@
         if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
-    // 質感鋼琴和弦鈴聲 (E-Major 9th: E4, G#4, B4, D#5, F#5)
+    // 暖心鋼琴和弦鈴聲 (E-Major 9th)
     function playAlarm() {
-        if (!document.getElementById("voiceToggle").checked) return;
         wakeUpAudio();
         const now = audioCtx.currentTime;
         const freqs = [329.63, 415.30, 493.88, 622.25, 739.99];
@@ -93,16 +84,16 @@
             gain.connect(audioCtx.destination);
             osc.frequency.setValueAtTime(freq, now);
             gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(0.15, now + 0.15); 
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 2.8);
+            gain.gain.linearRampToValueAtTime(0.15, now + 0.1); 
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
             osc.start(now);
-            osc.stop(now + 3.0);
+            osc.stop(now + 2.2);
         });
     }
 
-    function createMsg(text, rate, pitch) {
-        // 利用「標點+空白」策略引導出結尾的呼吸感
-        const u = new SpeechSynthesisUtterance(text + "。。。   ");
+    function createMsg(text, rate, pitch, isEnding = false) {
+        // 報數時不加多餘標點減少延遲，結束時才加標點增加氣息感
+        const u = new SpeechSynthesisUtterance(isEnding ? text + "。。。 " : text);
         u.lang = "zh-TW";
         const voices = synth.getVoices();
         const target = voices.find(v => v.name.includes('Meijia') && v.name.includes('Premium')) || 
@@ -118,7 +109,6 @@
     function handleStart() {
         inputField.blur();
         wakeUpAudio();
-        synth.speak(new SpeechSynthesisUtterance("")); 
         if (!isPaused) {
             remaining = parseInt(inputField.value, 10);
             if (isNaN(remaining) || remaining <= 0) return;
@@ -127,38 +117,33 @@
         isPaused = false;
         document.getElementById("startBtn").style.display = "none";
         document.getElementById("pauseBtn").style.display = "inline-block";
+        
+        // 初次觸發
+        runTick();
+        timerId = setInterval(runTick, 1000);
+    }
+
+    function runTick() {
         document.getElementById("display").textContent = remaining;
         
-        if (document.getElementById("countToggle").checked) {
-            synth.cancel();
-            // 報數也要具備「穩定的帶領感」
-            synth.speak(createMsg(remaining, 0.75, 1.05));
-        }
-
-        timerId = setInterval(() => {
-            remaining--;
-            if (remaining <= 0) {
-                clearInterval(timerId);
-                timerId = null;
-                document.getElementById("display").textContent = "0";
-                playAlarm(); 
-                // 鈴聲後 1.3 秒發聲，給予充足的共鳴緩衝空間
-                setTimeout(() => {
-                    synth.cancel();
-                    // 關鍵語速 0.52，展現最強氣息收尾
-                    synth.speak(createMsg("我們休息一下", 0.52, 1.05));
-                }, 1300);
-                resetUI();
-                return;
-            }
-            document.getElementById("display").textContent = remaining;
-            
+        if (remaining > 0) {
             if (document.getElementById("countToggle").checked) {
-                synth.cancel();
-                let r = (remaining <= 3) ? 0.65 : 0.75;
-                synth.speak(createMsg(remaining, r, 1.05));
+                synth.cancel(); // 強制中斷前一個發音，確保同步
+                // 數字報數語速調快至 0.9，確保在 1 秒內唸完
+                synth.speak(createMsg(String(remaining), 0.9, 1.05, false));
             }
-        }, 1000);
+            remaining--;
+        } else {
+            clearInterval(timerId);
+            timerId = null;
+            playAlarm();
+            setTimeout(() => {
+                synth.cancel();
+                // 結束語恢復溫柔氣息慢速 0.52
+                synth.speak(createMsg("我們休息一下", 0.52, 1.05, true));
+            }, 800);
+            resetUI();
+        }
     }
 
     function handlePause() {
@@ -183,11 +168,11 @@
 
     function resetUI() {
         inputField.disabled = false;
-        inputField.value = '';
         document.getElementById("startBtn").innerText = "開始";
         document.getElementById("startBtn").style.display = "inline-block";
         document.getElementById("pauseBtn").style.display = "none";
     }
+
     window.onload = () => { synth.getVoices(); };
 </script>
 
