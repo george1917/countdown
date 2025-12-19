@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>42專業復健陪伴 v42</title>
+    <title>專業復健陪伴 v43</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -41,7 +41,7 @@
 <div class="container">
     <div class="nurse-header">
         <h3>專業復健陪伴</h3>
-        <p>Chrome 節奏優化 · 護理師質感</p>
+        <p>Chrome 深度對位 · 高端質感版</p>
     </div>
     <div class="settings-container">
         <div class="settings-box">
@@ -70,7 +70,6 @@
     let audioCtx = null;
     let keepAliveNode = null;
 
-    // 精準環境偵測
     const isChromeDesktop = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor) && !/Mobile/.test(navigator.userAgent);
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
@@ -124,15 +123,15 @@
         
         let rate, delay;
         if (isChromeDesktop) {
-            // *** Chrome 深度鎖定：壓慢語速並增加大幅度延遲發聲 ***
-            rate = (num > 10) ? 0.75 : 0.60;
-            delay = (num > 10) ? 400 : 450;
+            // *** Chrome 終極補償：大幅拉後發聲起跑 (550ms)，並極度壓慢語速 ***
+            rate = (num > 10) ? 0.68 : 0.55;
+            delay = (num > 10) ? 550 : 650;
         } else if (isIOS) {
             rate = (num > 10) ? 0.92 : 0.75;
             delay = (num > 10) ? 0 : 250;
         } else {
             rate = 0.8;
-            delay = 200;
+            delay = 300;
         }
         
         setTimeout(() => { synth.speak(u); }, delay);
@@ -151,7 +150,6 @@
         document.getElementById("startBtn").style.display = "none";
         document.getElementById("pauseBtn").style.display = "inline-block";
         
-        // 第一秒同步
         document.getElementById("display").textContent = remaining;
         speakNumber(remaining);
         remaining--;
@@ -174,7 +172,7 @@
                 let endMsg = new SpeechSynthesisUtterance("我們休息一下");
                 endMsg.lang = "zh-TW";
                 endMsg.voice = getVoice();
-                endMsg.rate = (isChromeDesktop) ? 0.42 : 0.52; 
+                endMsg.rate = (isChromeDesktop) ? 0.4 : 0.52; 
                 synth.speak(endMsg);
             }, 1200); 
             resetUI();
