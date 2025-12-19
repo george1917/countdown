@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>專業復健陪伴 v21</title>
+    <title>專業復健陪伴 v22</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -79,13 +79,13 @@
         if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
-    // 高級醫療環境音 (G-Major 13th)
+    // 暖心鋼琴和弦鈴聲 (F-Major 9th: F4, A4, C5, E5, G5)
     function playAlarm() {
         if (!document.getElementById("voiceToggle").checked) return;
         wakeUpAudio();
         const now = audioCtx.currentTime;
-        const freqs = [392.00, 493.88, 587.33, 659.25, 739.99, 987.77];
-        freqs.forEach((freq, i) => {
+        const freqs = [349.23, 440.00, 523.25, 659.25, 783.99];
+        freqs.forEach((freq) => {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = 'sine';
@@ -93,10 +93,10 @@
             gain.connect(audioCtx.destination);
             osc.frequency.setValueAtTime(freq, now);
             gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(0.12, now + 0.1); 
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 2.8);
+            gain.gain.linearRampToValueAtTime(0.1, now + 0.1); 
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 2.5);
             osc.start(now);
-            osc.stop(now + 3.0);
+            osc.stop(now + 2.6);
         });
     }
 
@@ -130,8 +130,8 @@
         
         if (document.getElementById("countToggle").checked) {
             synth.cancel();
-            // 報數加入節奏性標點，產生引導律動感
-            synth.speak(createMsg(remaining + "... 。", 0.7, 1.05));
+            // 報數優化：數字後加句號，模擬治療師每一秒的穩定引導語調
+            synth.speak(createMsg(remaining + "。", 0.72, 1.05));
         }
 
         timerId = setInterval(() => {
@@ -141,12 +141,11 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm(); 
-                // 結束語優化：利用隱形成分增加呼吸厚度
+                // 鈴聲後 1.2 秒發聲，完整語句不拆解，使用極慢語速模擬氣息
                 setTimeout(() => {
                     synth.cancel();
-                    // 極慢語速 0.52 搭配微調標點，達成耳邊親口叮嚀的親密感
-                    synth.speak(createMsg("我們。 休息一下。", 0.52, 1.05));
-                }, 1300);
+                    synth.speak(createMsg("我們休息一下。", 0.52, 1.05));
+                }, 1200);
                 resetUI();
                 return;
             }
@@ -154,9 +153,9 @@
             
             if (document.getElementById("countToggle").checked) {
                 synth.cancel();
-                // 動態引導感：數字越小，發音越溫柔
-                let r = (remaining <= 3) ? 0.6 : 0.72;
-                synth.speak(createMsg(remaining + "... 。", r, 1.05));
+                // 動態調整報數：數字越小越溫柔，模擬治療師在身邊的陪伴
+                let r = (remaining <= 3) ? 0.65 : 0.72;
+                synth.speak(createMsg(remaining + "。", r, 1.05));
             }
         }, 1000);
     }
