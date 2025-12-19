@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>語音鈴聲倒數器 - 穩定版</title>
+    <title>語音倒數計時器 - 雙系統修復版</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
@@ -64,49 +64,53 @@
     const synth = window.speechSynthesis;
     const inputField = document.getElementById("seconds");
 
-    // 禁止 iPhone 手勢縮放
+    // 禁止 iPhone 手勢縮放並初始化
     document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
-    window.onload = () => inputField.focus();
+    window.onload = () => {
+        inputField.focus();
+        synth.getVoices(); // 預加載語音列表
+    };
 
-    // 核心語音函數：恢復 Chrome 最穩定的呼叫方式
+    // 穩定的報數函數
     function speak(text) {
-        synth.cancel(); // 徹底中斷舊語音，防止 Chrome 堆積
+        synth.cancel(); // 先中斷所有排隊中的語音
         
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "zh-TW";
-        u.rate = 1.7; // 加快語速確保同步
+        u.rate = 1.7; 
         u.pitch = 1.0;
         u.volume = 1.0;
 
-        // 解決 Chrome/iPhone 語音延遲的黃金延遲時間
+        // 使用極短延遲確保 cancel 完整執行後再 speak，這是 Chrome 穩定的關鍵
         setTimeout(() => {
             synth.speak(u);
         }, 10);
     }
 
-    // 警示鈴聲
+    // 警示鈴聲 (使用 Web Audio API)
     function playAlarm() {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContext) return;
         const audioCtx = new AudioContext();
         
-        function beep(time, freq) {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.type = 'square';
-            osc.frequency.setValueAtTime(freq, time);
-            gain.gain.setValueAtTime(0.3, time);
-            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.3);
-            osc.start(time);
-            osc.stop(time + 0.3);
-        }
-        beep(audioCtx.currentTime, 880);
-        beep(audioCtx.currentTime + 0.4, 880);
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
     }
 
     function handleStart() {
+        // 第一步：在點擊事件中立即執行一個無聲語音，解鎖所有瀏覽器的音訊限制
+        const unlock = new SpeechSynthesisUtterance("");
+        synth.speak(unlock);
+
         if (!isPaused) {
             remaining = parseInt(inputField.value, 10);
             if (isNaN(remaining) || remaining <= 0) return;
@@ -117,7 +121,6 @@
         document.getElementById("pauseBtn").style.display = "inline-block";
         inputField.disabled = true;
         
-        // 第一次報數
         document.getElementById("display").textContent = remaining;
         speak(String(remaining));
 
