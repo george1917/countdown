@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>護理師風格溫暖計時器</title>
+    <title>護理師風格溫暖計時器2</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -23,10 +23,12 @@
         }
         .instruction-box h3 { margin: 0 0 8px 0; font-size: 32px; color: #e67700; font-weight: 900; }
         .instruction-box p { margin: 4px 0; font-size: 28px; color: #2b2f33; font-weight: 800; white-space: nowrap; overflow: hidden; }
+        
         .settings-container { background: #f8f9fa; border-radius: 15px; padding: 8px 15px; margin-bottom: 12px; }
         .settings-box { display: flex; align-items: center; justify-content: flex-start; gap: 12px; padding: 6px 0; }
         .settings-box label { font-size: 24px; font-weight: 700; color: #444; cursor: pointer; }
         .settings-box input[type="checkbox"] { transform: scale(1.8); cursor: pointer; }
+        
         input[type="number"] {
             width: 100%; font-size: 38px; padding: 15px; margin-bottom: 12px;
             border: 2px solid #c6c6c8; border-radius: 14px; text-align: center; outline: none; background: #f2f2f7;
@@ -103,7 +105,7 @@
         osc.connect(gain); gain.connect(audioCtx.destination);
         osc.frequency.setValueAtTime(880, now);
         gain.gain.setValueAtTime(0, now);
-        gain.gain.linearRampToValueAtTime(0.3, now + 0.05); // 鈴聲調柔和一點
+        gain.gain.linearRampToValueAtTime(0.3, now + 0.05);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
         osc.start(now); osc.stop(now + 0.8);
     }
@@ -113,8 +115,9 @@
         if (force && !voiceToggle.checked) return;
 
         synth.cancel(); 
-        // 護理師調音：波浪號可以讓語尾帶有一種輕柔的延續感
-        const u = new SpeechSynthesisUtterance(text + "...~ ");
+        
+        // 【核心修正】改用空白與空格模擬停頓，避開波浪號
+        const u = new SpeechSynthesisUtterance(text + "   "); 
         u.lang = "zh-TW";
 
         const voices = synth.getVoices();
@@ -124,9 +127,9 @@
         if (target) u.voice = target;
 
         if (isIOS) {
-            // 護理師風格參數：稍微輕快但語調穩定、清亮
-            u.rate = 0.82;   
-            u.pitch = 0.5;   // 從 0.0 調升到 0.5，增加親和力與清亮感
+            // 護理師參數：清亮但穩重
+            u.rate = 0.8;   
+            u.pitch = 0.6;  // 略微提高，呈現溫柔清亮的聲線
             u.volume = 0.95; 
         } else {
             u.rate = 0.95; u.pitch = 1.0; 
@@ -160,8 +163,8 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm();
-                // 結尾語氣也改得比較溫柔
-                setTimeout(() => speak("時間到了喔", true), 600); 
+                // 使用口語化結尾增加護理師感
+                setTimeout(() => speak("時間到囉", true), 600); 
                 resetUI();
                 return;
             }
