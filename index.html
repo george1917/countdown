@@ -41,9 +41,9 @@
 
 <div class="container">
     <div class="instruction-box">
-        <h3>【 聲音修復說明 】</h3>
-        <p>1. iPhone <b>左側開關</b>不可見橘色 (響鈴模式)</p>
-        <p>2. 點擊「開始」會解鎖聲音</p>
+        <h3>【 聽不到聲音？ 】</h3>
+        <p>1. 請將手機左側<b>靜音開關向上撥</b> (響鈴模式)</p>
+        <p>2. 點擊「開始」即可解鎖聲音</p>
     </div>
 
     <input type="number" id="seconds" placeholder="輸入秒數" min="1" inputmode="numeric" autofocus>
@@ -63,22 +63,22 @@
     const synth = window.speechSynthesis;
     let audioCtx = null;
 
-    // 預初始化語音列表
+    // 解決 iPhone 語音初始化延遲
     window.onload = () => {
         synth.getVoices();
         document.getElementById("seconds").focus();
     };
 
     function speak(text) {
-        // 先強制中止，確保不會堆疊
+        // 先中止確保不排隊
         synth.cancel(); 
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "zh-TW";
         u.rate = 1.6;
         u.pitch = 0.95;
         
+        // 嘗試獲取高品質台灣人聲
         const voices = synth.getVoices();
-        // 優先搜尋高品質台灣人聲
         const target = voices.find(v => v.lang.includes('zh-TW') && (v.name.includes('Premium') || v.name.includes('Enhanced'))) || 
                        voices.find(v => v.lang.includes('zh-TW'));
         if (target) u.voice = target;
@@ -87,6 +87,7 @@
     }
 
     function playAlarm() {
+        // 每次結束前確認 Context 狀態
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') audioCtx.resume();
         
@@ -102,16 +103,16 @@
     }
 
     function handleStart() {
-        // 【核心解鎖】
-        // 1. 立即激活語音引擎
+        // 【關鍵解鎖：必須在點擊事件的第一線】
+        // 1. 立即激活語音權限
         const unlockVoice = new SpeechSynthesisUtterance("");
         synth.speak(unlockVoice);
 
-        // 2. 立即激活 Web Audio API (鈴聲)
+        // 2. 立即激活音訊上下文
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') audioCtx.resume();
 
-        // 3. 獲取秒數邏輯
+        // 3. 邏輯檢查
         if (!isPaused) {
             const input = document.getElementById("seconds");
             remaining = parseInt(input.value, 10);
@@ -136,7 +137,7 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm();
-                setTimeout(() => speak("倒數結束"), 700); 
+                setTimeout(() => speak("時間到"), 600); 
                 resetUI();
                 return;
             }
