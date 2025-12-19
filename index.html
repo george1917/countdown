@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>22專業復健陪伴 v22</title>
+    <title>專業復健陪伴 v23</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -79,12 +79,12 @@
         if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
-    // 暖心鋼琴和弦鈴聲 (F-Major 9th: F4, A4, C5, E5, G5)
+    // 質感鋼琴和弦鈴聲 (E-Major 9th: E4, G#4, B4, D#5, F#5)
     function playAlarm() {
         if (!document.getElementById("voiceToggle").checked) return;
         wakeUpAudio();
         const now = audioCtx.currentTime;
-        const freqs = [349.23, 440.00, 523.25, 659.25, 783.99];
+        const freqs = [329.63, 415.30, 493.88, 622.25, 739.99];
         freqs.forEach((freq) => {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -93,15 +93,16 @@
             gain.connect(audioCtx.destination);
             osc.frequency.setValueAtTime(freq, now);
             gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(0.1, now + 0.1); 
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 2.5);
+            gain.gain.linearRampToValueAtTime(0.15, now + 0.15); 
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 2.8);
             osc.start(now);
-            osc.stop(now + 2.6);
+            osc.stop(now + 3.0);
         });
     }
 
     function createMsg(text, rate, pitch) {
-        const u = new SpeechSynthesisUtterance(text);
+        // 利用「標點+空白」策略引導出結尾的呼吸感
+        const u = new SpeechSynthesisUtterance(text + "。。。   ");
         u.lang = "zh-TW";
         const voices = synth.getVoices();
         const target = voices.find(v => v.name.includes('Meijia') && v.name.includes('Premium')) || 
@@ -130,8 +131,8 @@
         
         if (document.getElementById("countToggle").checked) {
             synth.cancel();
-            // 報數優化：數字後加句號，模擬治療師每一秒的穩定引導語調
-            synth.speak(createMsg(remaining + "。", 0.72, 1.05));
+            // 報數也要具備「穩定的帶領感」
+            synth.speak(createMsg(remaining, 0.75, 1.05));
         }
 
         timerId = setInterval(() => {
@@ -141,11 +142,12 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm(); 
-                // 鈴聲後 1.2 秒發聲，完整語句不拆解，使用極慢語速模擬氣息
+                // 鈴聲後 1.3 秒發聲，給予充足的共鳴緩衝空間
                 setTimeout(() => {
                     synth.cancel();
-                    synth.speak(createMsg("我們休息一下。", 0.52, 1.05));
-                }, 1200);
+                    // 關鍵語速 0.52，展現最強氣息收尾
+                    synth.speak(createMsg("我們休息一下", 0.52, 1.05));
+                }, 1300);
                 resetUI();
                 return;
             }
@@ -153,9 +155,8 @@
             
             if (document.getElementById("countToggle").checked) {
                 synth.cancel();
-                // 動態調整報數：數字越小越溫柔，模擬治療師在身邊的陪伴
-                let r = (remaining <= 3) ? 0.65 : 0.72;
-                synth.speak(createMsg(remaining + "。", r, 1.05));
+                let r = (remaining <= 3) ? 0.65 : 0.75;
+                synth.speak(createMsg(remaining, r, 1.05));
             }
         }, 1000);
     }
@@ -192,4 +193,3 @@
 
 </body>
 </html>
-
