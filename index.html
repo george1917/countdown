@@ -44,6 +44,11 @@
         input[type="number"] {
             width: 100%; font-size: 40px; padding: 20px; margin-bottom: 20px;
             border: 3px solid #adb5bd; border-radius: 16px; text-align: center;
+            outline: none; transition: border-color 0.2s;
+        }
+        input[type="number"]:focus {
+            border-color: #007aff;
+            box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
         }
 
         #display {
@@ -74,7 +79,7 @@
         <p>3. 結束有鈴聲+語音</p>
     </div>
 
-    <input type="number" id="seconds" placeholder="秒數" min="1" inputmode="numeric">
+    <input type="number" id="seconds" placeholder="秒數" min="1" inputmode="numeric" autofocus>
     
     <div id="display">0</div>
 
@@ -90,8 +95,11 @@
     let remaining = 0;
     let isPaused = false;
     const synth = window.speechSynthesis;
+    const inputField = document.getElementById("seconds");
 
-    // 核心修正：同步播報
+    // 頁面載入後再次確保 focus (針對部分瀏覽器行為優化)
+    window.onload = () => inputField.focus();
+
     function speak(text) {
         synth.cancel(); 
         const u = new SpeechSynthesisUtterance(text);
@@ -100,37 +108,33 @@
         setTimeout(() => synth.speak(u), 5);
     }
 
-    // 新增：強化鈴聲功能 (兩次短促的高音)
     function playAlarm() {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
         function beep(time, freq) {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.connect(gain);
             gain.connect(audioCtx.destination);
-            osc.type = 'square'; // 使用方波讓聲音更響亮像鈴聲
+            osc.type = 'square';
             osc.frequency.setValueAtTime(freq, time);
             gain.gain.setValueAtTime(0.3, time);
             gain.gain.exponentialRampToValueAtTime(0.01, time + 0.3);
             osc.start(time);
             osc.stop(time + 0.3);
         }
-
-        // 響兩聲鈴聲
         beep(audioCtx.currentTime, 880);
         beep(audioCtx.currentTime + 0.4, 880);
     }
 
     function handleStart() {
         if (!isPaused) {
-            remaining = parseInt(document.getElementById("seconds").value, 10);
+            remaining = parseInt(inputField.value, 10);
             if (isNaN(remaining) || remaining <= 0) return;
         }
         isPaused = false;
         document.getElementById("startBtn").style.display = "none";
         document.getElementById("pauseBtn").style.display = "inline-block";
-        document.getElementById("seconds").disabled = true;
+        inputField.disabled = true;
         
         document.getElementById("display").textContent = remaining;
         speak(String(remaining));
@@ -141,11 +145,8 @@
                 clearInterval(timerId);
                 timerId = null;
                 document.getElementById("display").textContent = "0";
-                
-                // 結束時：先響鈴，再講話
                 playAlarm();
                 setTimeout(() => speak("時間到"), 800); 
-
                 resetUI();
                 return;
             }
@@ -175,10 +176,12 @@
     }
 
     function resetUI() {
-        document.getElementById("seconds").disabled = false;
+        inputField.disabled = false;
         document.getElementById("startBtn").innerText = "開始倒數";
         document.getElementById("startBtn").style.display = "inline-block";
         document.getElementById("pauseBtn").style.display = "none";
+        // 重置後自動回到輸入框，方便下一次輸入
+        setTimeout(() => inputField.focus(), 100);
     }
 </script>
 
