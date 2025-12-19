@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>真人感計時器 - 終極調音</title>
+    <title>真人感計時器 - 終極音質</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
@@ -14,7 +14,6 @@
             width: 92%; max-width: 450px; padding: 25px;
             background: #ffffff; border-radius: 30px; box-shadow: 0 8px 30px rgba(0,0,0,0.1);
         }
-        
         .instruction-box {
             background: #fff9db; border: 3px solid #f08c00; border-radius: 20px;
             padding: 20px 22px; margin-bottom: 20px; text-align: left;
@@ -24,7 +23,6 @@
             margin: 6px 0; font-size: 30px; color: #2b2f33; font-weight: 800; 
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        
         .settings-box {
             display: flex; align-items: center; justify-content: center;
             gap: 15px; margin-bottom: 15px; padding: 12px;
@@ -32,7 +30,6 @@
         }
         .settings-box label { font-size: 26px; font-weight: 700; color: #444; cursor: pointer; }
         .settings-box input[type="checkbox"] { transform: scale(2.2); cursor: pointer; }
-        
         input[type="number"] {
             width: 100%; font-size: 42px; padding: 18px; margin-bottom: 15px;
             border: 2px solid #c6c6c8; border-radius: 14px; text-align: center; outline: none; background: #f2f2f7;
@@ -121,8 +118,8 @@
         if (!voiceToggle.checked) return;
         synth.cancel(); 
         
-        // 加入句號強迫語調下降
-        const u = new SpeechSynthesisUtterance(text + "。");
+        // 模擬真人語氣的標點
+        const u = new SpeechSynthesisUtterance(text + " ");
         u.lang = "zh-TW";
 
         const voices = synth.getVoices();
@@ -132,9 +129,9 @@
         if (target) u.voice = target;
 
         if (isIOS) {
-            u.rate = 0.82;   // 緩慢而清晰
-            u.pitch = 0.05;  // 終極低頻，濾除所有尖銳機械音
-            u.volume = 0.8;  // 微降音量以換取更好的音質清晰度
+            u.rate = 0.8;    // 極限平穩語速
+            u.pitch = 0.0;   // 極限重低音修正機械感
+            u.volume = 0.85; // 避開喇叭共振雜訊
         } else {
             u.rate = 1.0;  
             u.pitch = 0.9; 
