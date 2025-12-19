@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>18專業復健治療師計時器 v18</title>
+    <title>專業復健治療師計時器 v19</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -80,12 +80,12 @@
         if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
-    // 降E大調九和弦：最具療癒感的頻率 (Eb4, G4, Bb4, F5)
+    // A大調九和弦鈴聲 (A4, C#5, E5, G#5, B5) - 充滿質感與療癒
     function playAlarm() {
         if (!document.getElementById("voiceToggle").checked) return;
         wakeUpAudio();
         const now = audioCtx.currentTime;
-        const freqs = [311.13, 392.00, 466.16, 698.46];
+        const freqs = [440.00, 554.37, 659.25, 830.61, 987.77];
         freqs.forEach((freq) => {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -94,41 +94,35 @@
             gain.connect(audioCtx.destination);
             osc.frequency.setValueAtTime(freq, now);
             gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(0.2, now + 0.1); 
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
+            gain.gain.linearRampToValueAtTime(0.15, now + 0.1); 
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
             osc.start(now);
-            osc.stop(now + 2.0);
+            osc.stop(now + 2.2);
         });
     }
 
-    // 治療師核心優化：全過程真人語感調律
-    function createMsg(text, type = "normal", count = 0) {
-        // 在結尾增加多重空白，引導語音引擎產出自然語調與換氣
-        const u = new SpeechSynthesisUtterance(text + "   ");
+    function createMsg(text, rate = 0.8, pitch = 1.1) {
+        const u = new SpeechSynthesisUtterance(text);
         u.lang = "zh-TW";
         const voices = synth.getVoices();
         const target = voices.find(v => v.name.includes('Meijia') && v.name.includes('Premium')) || 
                        voices.find(v => v.lang.includes('zh-TW') && v.name.includes('Premium')) ||
                        voices.find(v => v.lang.includes('zh-TW'));
         if (target) u.voice = target;
-        
         u.volume = 1.0;
-        
-        if (type === "ending") {
-            // 結束語：極致慢速 (0.6) 模擬耳邊叮嚀的氣息感
-            u.rate = 0.6;   
-            u.pitch = 1.15; 
-        } else {
-            // 倒數報數：
-            if (count <= 3 && count > 0) {
-                u.rate = 0.8;   // 最後三秒稍慢且音調微升，增加鼓勵感
-                u.pitch = 1.15;
-            } else {
-                u.rate = 0.85;  // 平常報數維持穩定引導節奏
-                u.pitch = 1.08;
-            }
-        }
+        u.rate = rate;
+        u.pitch = pitch;
         return u;
+    }
+
+    // 模擬耳邊叮嚀的複音發聲
+    function speakEnding() {
+        synth.cancel();
+        // 將語句分開，給予不同的「呼吸感」
+        const m1 = createMsg("我們", 0.65, 1.15);
+        const m2 = createMsg("休息一下", 0.6, 1.05);
+        synth.speak(m1);
+        setTimeout(() => synth.speak(m2), 600);
     }
 
     function handleStart() {
@@ -147,7 +141,7 @@
         
         if (document.getElementById("countToggle").checked) {
             synth.cancel();
-            synth.speak(createMsg(String(remaining), "normal", remaining));
+            synth.speak(createMsg(String(remaining), 0.85, 1.1));
         }
 
         timerId = setInterval(() => {
@@ -157,21 +151,20 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm(); 
-                // 鈴聲後留出 1.5 秒空白，徹底模擬真人的觀察與開口節奏
-                setTimeout(() => {
-                    synth.cancel();
-                    synth.speak(createMsg("我們休息一下", "ending"));
-                }, 1500);
+                setTimeout(speakEnding, 1200);
                 resetUI();
                 return;
             }
             document.getElementById("display").textContent = remaining;
+            
             if (document.getElementById("countToggle").checked) {
                 synth.cancel();
-                // 模擬真人逐秒報數時的獨立呼吸感
-                setTimeout(() => {
-                    synth.speak(createMsg(String(remaining), "normal", remaining));
-                }, 10);
+                // 動態節奏：倒數最後5秒增加鼓勵感，聲音更溫柔緩慢
+                if (remaining <= 5) {
+                    synth.speak(createMsg(String(remaining), 0.7, 1.15));
+                } else {
+                    synth.speak(createMsg(String(remaining), 0.85, 1.1));
+                }
             }
         }, 1000);
     }
