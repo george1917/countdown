@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>真人語音倒數計時器</title>
+    <title>Safari 語音全修復版</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
@@ -41,17 +41,16 @@
 
 <div class="container">
     <div class="instruction-box">
-        <h3>【 真人聲音說明 】</h3>
-        <p>1. iPhone 建議關閉「省電模式」</p>
-        <p>2. 第一次按下「開始」會載入人聲</p>
-        <p>3. 聽聽看是否有真人語調</p>
+        <h3>【 沒聲音排除 】</h3>
+        <p>1. 檢查手機左側<b>靜音開關</b>是否關閉</p>
+        <p>2. 確認<b>媒體音量</b>已拉到最大</p>
     </div>
 
     <input type="number" id="seconds" placeholder="輸入秒數" min="1" inputmode="numeric" autofocus>
     <div id="display">0</div>
 
     <div class="controls">
-        <button id="startBtn" onclick="handleStart()">開始倒數</button>
+        <button id="startBtn" onclick="safariUnlockAndStart()">開始倒數</button>
         <button id="pauseBtn" onclick="handlePause()">暫停</button>
         <button id="resetBtn" onclick="handleReset()">重設</button>
     </div>
@@ -61,10 +60,11 @@
     let timerId = null;
     let remaining = 0;
     let isPaused = false;
+    let audioCtx = null;
     const synth = window.speechSynthesis;
     const inputField = document.getElementById("seconds");
 
-    // 解決 iOS 語音加載問題
+    // 預初始化
     window.onload = () => {
         synth.getVoices();
         inputField.focus();
@@ -72,34 +72,21 @@
 
     function speak(text) {
         synth.cancel(); 
-        
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "zh-TW";
+        u.rate = 1.6; 
+        u.pitch = 0.9;
         
-        // --- 核心優化：iPhone 高品質人聲篩選 ---
         const voices = synth.getVoices();
-        
-        // 優先搜尋名稱包含 "Meijia" (美佳) 或 "Premium" 的台灣人聲
         const premiumVoice = voices.find(v => v.lang.includes('zh-TW') && (v.name.includes('Premium') || v.name.includes('Enhanced'))) ||
-                             voices.find(v => v.lang.includes('zh-TW') && v.name.includes('Meijia')) ||
                              voices.find(v => v.lang.includes('zh-TW'));
         
-        if (premiumVoice) {
-            u.voice = premiumVoice;
-        }
-
-        u.rate = 1.6;  // 語速稍微放緩一點點，讓口語更清晰
-        u.pitch = 0.9; // 降低音調，聲音會更像真人
-        u.volume = 1.0;
-
-        setTimeout(() => {
-            synth.speak(u);
-        }, 15);
+        if (premiumVoice) u.voice = premiumVoice;
+        synth.speak(u);
     }
 
     function playAlarm() {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        const audioCtx = new AudioCtx();
+        // 在倒數結束時，不需要重新 resume，因為點擊時已經授權
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.connect(gain); gain.connect(audioCtx.destination);
@@ -111,17 +98,35 @@
         osc.stop(audioCtx.currentTime + 0.3);
     }
 
-    function handleStart() {
-        // iPhone/Safari 必要：啟動音訊與語音授權
-        const unlock = new SpeechSynthesisUtterance("");
-        synth.speak(unlock);
+    // --- 終極修正：Safari 強制授權啟動 ---
+    function safariUnlockAndStart() {
+        // A. 建立並啟動 AudioContext (必須在點擊事件的第一行)
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
 
+        // B. 強制發送一個空語音解鎖 Speech API
+        const unlockVoice = new SpeechSynthesisUtterance("");
+        synth.speak(unlockVoice);
+
+        // C. 播放一個極短的靜音解鎖鈴聲
+        const silentBuf = audioCtx.createBuffer(1, 1, 22050);
+        const source = audioCtx.createBufferSource();
+        source.buffer = silentBuf;
+        source.connect(audioCtx.destination);
+        source.start(0);
+
+        // D. 執行倒數邏輯
+        handleStart();
+    }
+
+    function handleStart() {
         if (!isPaused) {
             const val = parseInt(inputField.value, 10);
-            if (isNaN(val) || val <= 0) {
-                alert("請輸入秒數");
-                return;
-            }
+            if (isNaN(val) || val <= 0) { alert("請輸入秒數"); return; }
             remaining = val;
         }
         
@@ -140,7 +145,7 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm();
-                setTimeout(() => speak("倒數結束"), 800); 
+                setTimeout(() => speak("時間到"), 600); 
                 resetUI();
                 return;
             }
