@@ -10,65 +10,69 @@
             margin: 0; min-height: 100vh;
             display: flex; align-items: center; justify-content: center;
             background: #f0f2f5;
-            font-family: -apple-system, "Microsoft JhengHei", sans-serif;
+            font-family: "Microsoft JhengHei", -apple-system, sans-serif;
         }
         .container {
-            width: 95%; max-width: 500px; padding: 30px;
+            width: 95%; max-width: 550px; padding: 30px;
             background: #ffffff; border-radius: 24px;
             box-shadow: 0 15px 35px rgba(0,0,0,0.1);
         }
-        /* 加大版使用說明樣式 */
+
+        /* --- 說明區塊字體強力加大 --- */
         .instruction-box {
-            background: #f0f7ff;
+            background: #fff9db; /* 改成顯眼的淡黃色 */
+            border: 3px solid #f08c00;
             border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 25px;
+            padding: 25px !important;
+            margin-bottom: 30px !important;
             text-align: left;
-            border-left: 8px solid #007aff;
         }
         .instruction-box h3 {
-            margin: 0 0 12px 0;
-            font-size: 28px; /* 加大標題 */
-            color: #007aff;
-            font-weight: 800;
+            margin: 0 0 15px 0 !important;
+            font-size: 36px !important; /* 標題極大 */
+            color: #e67700 !important;
+            font-weight: 900 !important;
         }
         .instruction-box p {
-            margin: 8px 0;
-            font-size: 20px; /* 加大內文 */
-            color: #1f2933;
-            line-height: 1.6;
-            font-weight: 500;
+            margin: 12px 0 !important;
+            font-size: 26px !important; /* 內文極大 */
+            color: #2b2f33 !important;
+            line-height: 1.4 !important;
+            font-weight: 700 !important;
         }
+
+        /* --- 輸入與顯示 --- */
         input[type="number"] {
-            width: 100%; font-size: 36px; padding: 18px; margin-bottom: 20px;
-            border: 3px solid #d1d5db; border-radius: 16px; text-align: center;
-            outline: none;
+            width: 100%; font-size: 40px; padding: 20px; margin-bottom: 20px;
+            border: 3px solid #adb5bd; border-radius: 16px; text-align: center;
         }
-        input:focus { border-color: #007aff; }
         #display {
-            font-size: 120px; font-weight: 900; color: #111827;
-            margin: 10px 0; text-align: center; font-variant-numeric: tabular-nums;
+            font-size: 140px; /* 數字也加大 */
+            font-weight: 900; color: #111827;
+            margin: 10px 0; text-align: center;
+            font-family: Arial, sans-serif;
         }
-        .controls { display: flex; gap: 12px; }
+
+        /* --- 按鈕 --- */
+        .controls { display: flex; gap: 15px; }
         button {
-            flex: 1; font-size: 24px; font-weight: 700; padding: 20px;
-            border: none; border-radius: 16px; cursor: pointer; transition: 0.2s;
+            flex: 1; font-size: 28px; font-weight: 800; padding: 20px;
+            border: none; border-radius: 16px; cursor: pointer;
         }
         #startBtn { background: #007aff; color: white; }
         #pauseBtn { background: #ff9500; color: white; display: none; }
-        #resetBtn { background: #e5e7eb; color: #4b5563; }
-        button:active { transform: scale(0.96); opacity: 0.9; }
+        #resetBtn { background: #dee2e6; color: #495057; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="instruction-box">
-        <h3>使用說明</h3>
-        <p>1. 輸入欲倒數的秒數。</p>
-        <p>2. 按下「開始」，語音與數字即刻同步。</p>
-        <p>3. 倒數中可隨時「暫停」或「重設」。</p>
-        <p>4. 結束時會發出警示音。 </p>
+        <h3>【 使用說明 】</h3>
+        <p>1. 輸入秒數</p>
+        <p>2. 按下「開始」</p>
+        <p>3. 聲音與數字同步</p>
+        <p>4. 結束時發出嗶聲</p>
     </div>
 
     <input type="number" id="seconds" placeholder="輸入秒數" min="1" inputmode="numeric">
@@ -76,7 +80,7 @@
     <div id="display">0</div>
 
     <div class="controls">
-        <button id="startBtn" onclick="handleStart()">開始</button>
+        <button id="startBtn" onclick="handleStart()">開始倒數</button>
         <button id="pauseBtn" onclick="handlePause()">暫停</button>
         <button id="resetBtn" onclick="handleReset()">重設</button>
     </div>
@@ -89,10 +93,10 @@
     const synth = window.speechSynthesis;
 
     function speak(text) {
-        synth.cancel(); // 徹底中斷舊語音，防止重疊
+        synth.cancel(); 
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "zh-TW";
-        u.rate = 1.6; // 加快語速確保一秒內唸完
+        u.rate = 1.7; // 再次微調語速，確保同步
         setTimeout(() => synth.speak(u), 5);
     }
 
@@ -114,15 +118,12 @@
             remaining = parseInt(document.getElementById("seconds").value, 10);
             if (isNaN(remaining) || remaining <= 0) return;
         }
-        
         isPaused = false;
         document.getElementById("startBtn").style.display = "none";
         document.getElementById("pauseBtn").style.display = "inline-block";
         document.getElementById("seconds").disabled = true;
-
         document.getElementById("display").textContent = remaining;
         speak(String(remaining));
-
         timerId = setInterval(() => {
             remaining--;
             if (remaining <= 0) {
@@ -161,7 +162,7 @@
 
     function resetUI() {
         document.getElementById("seconds").disabled = false;
-        document.getElementById("startBtn").innerText = "開始";
+        document.getElementById("startBtn").innerText = "開始倒數";
         document.getElementById("startBtn").style.display = "inline-block";
         document.getElementById("pauseBtn").style.display = "none";
     }
