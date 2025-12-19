@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>專業復健陪伴 v45</title>
+    <title>復健治療師計時器</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -41,7 +41,7 @@
 <div class="container">
     <div class="nurse-header">
         <h3>專業復健陪伴</h3>
-        <p>Chrome 絕對對位版</p>
+        <p>溫柔叮嚀 · 穩定陪伴</p>
     </div>
     <div class="settings-container">
         <div class="settings-box">
@@ -104,14 +104,17 @@
                voices[0];
     }
 
-    function speakAndStep() {
+    // *** 核心同步更新函數 ***
+    function syncTick() {
         if (remaining <= 0) {
             handleComplete();
             return;
         }
 
+        // 1. 先更新顯示
         document.getElementById("display").textContent = remaining;
         
+        // 2. 立即擊發語音
         if (document.getElementById("countToggle").checked) {
             synth.cancel();
             const u = new SpeechSynthesisUtterance(String(remaining));
@@ -119,21 +122,20 @@
             u.voice = getVoice();
             u.pitch = 1.05;
             
+            // 針對 Chrome 桌面版進行語速補償
             if (isChromeDesktop) {
-                // Chrome 專屬：壓慢語速到 0.7，強迫聲音撐滿視覺的一秒
-                u.rate = (remaining > 10) ? 0.7 : 0.6;
+                u.rate = (remaining > 10) ? 0.72 : 0.6;
             } else if (isIOS) {
                 u.rate = (remaining > 10) ? 0.92 : 0.75;
             } else {
                 u.rate = 0.8;
             }
-            
             synth.speak(u);
         }
 
         remaining--;
-        // 使用計時器精準控制每一秒的循環
-        timerId = setTimeout(speakAndStep, 1000);
+        // 3. 設定下一秒的循環
+        timerId = setTimeout(syncTick, 1000);
     }
 
     function handleStart() {
@@ -151,8 +153,8 @@
         document.getElementById("startBtn").style.display = "none";
         document.getElementById("pauseBtn").style.display = "inline-block";
         
-        // 啟動發聲與計時
-        speakAndStep();
+        // 按下瞬间立刻执行第一次同步
+        syncTick();
     }
 
     function handleComplete() {
@@ -176,7 +178,6 @@
         clearTimeout(timerId); timerId = null; isPaused = true;
         synth.cancel();
         document.getElementById("startBtn").innerText = "繼續";
-        document.getElementById("startBtn").style.display = "none"; // 暫時修正顯示邏輯
         document.getElementById("startBtn").style.display = "inline-block";
         document.getElementById("pauseBtn").style.display = "none";
     }
