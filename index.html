@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>真人語音倒數器</title>
+    <title>真人感語音倒數器</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
@@ -80,7 +80,6 @@
     const inputField = document.getElementById("seconds");
     const voiceToggle = document.getElementById("voiceToggle");
 
-    // 偵測是否為 iPhone
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
     inputField.addEventListener('focus', function() { this.value = ''; });
@@ -112,19 +111,23 @@
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "zh-TW";
 
-        // --- iPhone 專屬參數修正 ---
-        if (isIOS) {
-            u.rate = 1.2;  // iPhone 設慢一點，避免聽起來太急
-            u.pitch = 0.8; // iPhone 設低一點，增加聲音厚度
-        } else {
-            u.rate = 1.5;  // Chrome 標準語速
-            u.pitch = 0.9; // Chrome 標準音調
-        }
-
         const voices = synth.getVoices();
-        const target = voices.find(v => v.lang.includes('zh-TW') && (v.name.includes('Premium') || v.name.includes('Enhanced'))) || 
-                       voices.find(v => v.lang.includes('zh-TW'));
+        
+        // 強制鎖定高品質人聲關鍵字
+        const premiumVoices = voices.filter(v => v.lang.includes('zh-TW') && (v.name.includes('Premium') || v.name.includes('Enhanced') || v.name.includes('Meijia')));
+        
+        // 如果有高品質就用高品質，沒有就用普通繁體中文
+        const target = premiumVoices.length > 0 ? premiumVoices[0] : voices.find(v => v.lang.includes('zh-TW'));
         if (target) u.voice = target;
+
+        // --- iPhone 深度修正參數 ---
+        if (isIOS) {
+            u.rate = 1.1;   // 報數慢一點才不會尖銳
+            u.pitch = 0.7;  // 大幅壓低音調，去除機械尖銳感
+        } else {
+            u.rate = 1.5;  
+            u.pitch = 0.9; 
+        }
         
         setTimeout(() => synth.speak(u), 10);
     }
@@ -189,7 +192,6 @@
         inputField.disabled = false;
         inputField.value = '';
         document.getElementById("startBtn").innerText = "開始倒數";
-        document.getElementById("startBtn").style.display = "none"; 
         document.getElementById("startBtn").style.display = "inline-block";
         document.getElementById("pauseBtn").style.display = "none";
         setTimeout(() => inputField.focus(), 150);
