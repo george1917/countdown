@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>真人語音計時器</title>
+    <title>自然語音倒數計時器</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
@@ -14,7 +14,6 @@
             width: 92%; max-width: 450px; padding: 25px;
             background: #ffffff; border-radius: 30px; box-shadow: 0 8px 30px rgba(0,0,0,0.1);
         }
-        /* 修改後的操作說明方框 */
         .instruction-box {
             background: #fff9db; border: 3px solid #f08c00; border-radius: 20px;
             padding: 22px; margin-bottom: 25px; text-align: left;
@@ -43,12 +42,13 @@
 <div class="container">
     <div class="instruction-box">
         <h3>【 操作說明 】</h3>
-        <p>1. 輸入要倒數的秒數</p>
-        <p>2. 按下「開始」聽報數</p>
-        <p>3. iPhone 請記得開聲音</p>
+        <p>1. 點擊輸入框會自動清空</p>
+        <p>2. 輸入秒數後按「開始」</p>
+        <p>3. 結束時會嗶一聲並報數</p>
     </div>
 
-    <input type="number" id="seconds" placeholder="輸入秒數" min="1" inputmode="numeric" autofocus>
+    <input type="number" id="seconds" placeholder="輸入秒數" min="1" inputmode="numeric" autofocus onfocus="this.value=''">
+    
     <div id="display">0</div>
 
     <div class="controls">
@@ -64,13 +64,13 @@
     let isPaused = false;
     const synth = window.speechSynthesis;
     let audioCtx = null;
+    const inputField = document.getElementById("seconds");
 
     window.onload = () => {
         synth.getVoices();
-        document.getElementById("seconds").focus();
+        inputField.focus();
     };
 
-    // 播放鈴聲 (嗶聲)
     function playAlarm() {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -79,8 +79,8 @@
         const gain = audioCtx.createGain();
         osc.connect(gain); gain.connect(audioCtx.destination);
         
-        osc.type = 'sine'; // 圓潤的鈴聲
-        osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5 音調
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
         gain.gain.setValueAtTime(0, audioCtx.currentTime);
         gain.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.05);
         gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
@@ -105,20 +105,18 @@
     }
 
     function handleStart() {
-        // 解鎖音訊
         const unlockVoice = new SpeechSynthesisUtterance("");
         synth.speak(unlockVoice);
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') audioCtx.resume();
 
         if (!isPaused) {
-            const input = document.getElementById("seconds");
-            remaining = parseInt(input.value, 10);
+            remaining = parseInt(inputField.value, 10);
             if (isNaN(remaining) || remaining <= 0) {
                 alert("請輸入秒數");
                 return;
             }
-            input.disabled = true;
+            inputField.disabled = true;
         }
         
         isPaused = false;
@@ -134,11 +132,8 @@
                 clearInterval(timerId);
                 timerId = null;
                 document.getElementById("display").textContent = "0";
-                
-                // 結束時先響鈴，再說話
                 playAlarm();
                 setTimeout(() => speak("時間到"), 400); 
-                
                 resetUI();
                 return;
             }
@@ -152,7 +147,7 @@
         timerId = null;
         isPaused = true;
         synth.cancel();
-        document.getElementById("startBtn").innerText = "繼續倒數";
+        document.getElementById("startBtn").innerText = "繼續";
         document.getElementById("startBtn").style.display = "inline-block";
         document.getElementById("pauseBtn").style.display = "none";
     }
@@ -168,12 +163,12 @@
     }
 
     function resetUI() {
-        const input = document.getElementById("seconds");
-        input.disabled = false;
+        inputField.disabled = false;
         document.getElementById("startBtn").innerText = "開始倒數";
         document.getElementById("startBtn").style.display = "inline-block";
         document.getElementById("pauseBtn").style.display = "none";
-        setTimeout(() => input.focus(), 100);
+        // 核心修改：重置後自動聚焦
+        setTimeout(() => inputField.focus(), 100);
     }
 </script>
 
