@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>真人感語音計時器</title>
+    <title>真人語音計時器</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
@@ -108,10 +108,10 @@
         osc.type = 'sine';
         osc.frequency.setValueAtTime(880, now);
         gain.gain.setValueAtTime(0, now);
-        gain.gain.linearRampToValueAtTime(0.5, now + 0.05);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+        gain.gain.linearRampToValueAtTime(0.5, now + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
         osc.start(now);
-        osc.stop(now + 0.5);
+        osc.stop(now + 0.6);
     }
 
     function speak(text) {
@@ -121,14 +121,15 @@
         u.lang = "zh-TW";
 
         const voices = synth.getVoices();
+        // 優先搜尋高品質美佳 (Premium)
         const target = voices.find(v => v.name.includes('Meijia') && v.name.includes('Premium')) || 
                        voices.find(v => v.lang.includes('zh-TW') && (v.name.includes('Premium') || v.name.includes('Enhanced'))) ||
                        voices.find(v => v.lang.includes('zh-TW'));
         if (target) u.voice = target;
 
         if (isIOS) {
-            u.rate = 0.9;  // 速度放慢，增加沉穩感
-            u.pitch = 0.2; // 極低音調，徹底抵銷數位尖銳音
+            u.rate = 0.85;  // 慢速報數，增加穩定度與厚度
+            u.pitch = 0.1;  // 極限下壓音調，濾除數位雜訊
         } else {
             u.rate = 1.1;  
             u.pitch = 0.9; 
@@ -160,7 +161,7 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm();
-                setTimeout(() => speak("時間到了"), 800); 
+                setTimeout(() => speak("時間到了"), 850); 
                 resetUI();
                 return;
             }
