@@ -84,25 +84,37 @@
 
     inputField.addEventListener('focus', function() { this.value = ''; });
 
-    window.onload = () => {
-        synth.getVoices();
-        inputField.focus();
-    };
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
 
+    // 播放兩聲鈴聲
     function playAlarm() {
         if (!voiceToggle.checked) return;
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0, audioCtx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.05);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.5);
+        initAudio();
+        
+        const playTone = (time) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, time);
+            gain.gain.setValueAtTime(0, time);
+            gain.gain.linearRampToValueAtTime(0.3, time + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.3);
+            osc.start(time);
+            osc.stop(time + 0.3);
+        };
+
+        const now = audioCtx.currentTime;
+        playTone(now);      // 第一聲
+        playTone(now + 0.4); // 第二聲
     }
 
     function speak(text) {
@@ -112,18 +124,13 @@
         u.lang = "zh-TW";
 
         const voices = synth.getVoices();
-        
-        // 強制鎖定高品質人聲關鍵字
-        const premiumVoices = voices.filter(v => v.lang.includes('zh-TW') && (v.name.includes('Premium') || v.name.includes('Enhanced') || v.name.includes('Meijia')));
-        
-        // 如果有高品質就用高品質，沒有就用普通繁體中文
-        const target = premiumVoices.length > 0 ? premiumVoices[0] : voices.find(v => v.lang.includes('zh-TW'));
+        const target = voices.find(v => v.lang.includes('zh-TW') && (v.name.includes('Premium') || v.name.includes('Enhanced') || v.name.includes('Meijia'))) || 
+                       voices.find(v => v.lang.includes('zh-TW'));
         if (target) u.voice = target;
 
-        // --- iPhone 深度修正參數 ---
         if (isIOS) {
-            u.rate = 1.1;   // 報數慢一點才不會尖銳
-            u.pitch = 0.7;  // 大幅壓低音調，去除機械尖銳感
+            u.rate = 1.0;   // 慢速報數
+            u.pitch = 0.5;  // 極低音調，徹底壓制尖銳感
         } else {
             u.rate = 1.5;  
             u.pitch = 0.9; 
@@ -133,11 +140,9 @@
     }
 
     function handleStart() {
+        initAudio(); // 強制解鎖音效權限
         if (voiceToggle.checked) {
-            const unlock = new SpeechSynthesisUtterance("");
-            synth.speak(unlock);
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            if (audioCtx.state === 'suspended') audioCtx.resume();
+            synth.speak(new SpeechSynthesisUtterance("")); // 強制解鎖語音權限
         }
 
         if (!isPaused) {
@@ -159,7 +164,8 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm();
-                setTimeout(() => speak("時間到了"), 400); 
+                // 延遲報讀「時間到」，讓兩聲鈴聲先播完
+                setTimeout(() => speak("時間到了"), 1000); 
                 resetUI();
                 return;
             }
@@ -196,6 +202,11 @@
         document.getElementById("pauseBtn").style.display = "none";
         setTimeout(() => inputField.focus(), 150);
     }
+    
+    window.onload = () => {
+        synth.getVoices();
+        inputField.focus();
+    };
 </script>
 
 </body>
