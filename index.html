@@ -3,89 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <title>進階語音倒數計時器</title>
+    <title>極速同步語音倒數器</title>
     <style>
         * { box-sizing: border-box; }
         body {
             margin: 0; min-height: 100vh;
             display: flex; align-items: center; justify-content: center;
-            background: linear-gradient(180deg, #e9eef3 0%, #f7f9fb 100%);
-            font-family: -apple-system, sans-serif;
+            background: #f0f2f5;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
         .container {
-            width: 100%; max-width: 480px; padding: 32px;
-            background: #ffffff; border-radius: 24px;
-            box-shadow: 0 12px 30px rgba(0,0,0,0.08); text-align: center;
+            width: 90%; max-width: 400px; padding: 30px;
+            background: white; border-radius: 28px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1); text-align: center;
         }
-        .guide { text-align: left; font-size: 18px; margin-bottom: 20px; color: #4b5563; }
+        h2 { color: #1c1e21; margin-bottom: 20px; }
         input[type="number"] {
-            width: 100%; font-size: 34px; padding: 15px; margin-bottom: 20px;
-            border: 2px solid #d1d5db; border-radius: 16px; text-align: center;
+            width: 100%; font-size: 32px; padding: 15px; margin-bottom: 20px;
+            border: 2px solid #e4e6eb; border-radius: 12px; text-align: center;
+            outline: none; transition: border 0.3s;
         }
-        .controls { display: flex; gap: 10px; }
+        input:focus { border-color: #007aff; }
+        .controls { display: flex; gap: 12px; margin-bottom: 20px; }
         button {
-            flex: 1; font-size: 24px; padding: 15px; border: none;
-            border-radius: 18px; cursor: pointer; transition: 0.2s;
+            flex: 1; font-size: 20px; font-weight: 600; padding: 15px;
+            border: none; border-radius: 12px; cursor: pointer; transition: 0.2s;
         }
         #startBtn { background: #007aff; color: white; }
         #pauseBtn { background: #ff9500; color: white; display: none; }
-        #resetBtn { background: #ff3b30; color: white; }
-        button:disabled { background: #d1d5db; cursor: not-allowed; }
-        #display { margin-top: 30px; font-size: 100px; font-weight: 800; color: #111827; }
+        #resetBtn { background: #f0f2f5; color: #4b5563; }
+        button:active { transform: scale(0.98); opacity: 0.9; }
+        button:disabled { background: #e4e6eb; color: #bcc0c4; cursor: not-allowed; }
+        #display { 
+            font-size: 120px; font-weight: 800; color: #1c1e21; 
+            margin: 20px 0; font-variant-numeric: tabular-nums;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="guide"><strong>倒數計時器</strong></div>
-    <input type="number" id="seconds" placeholder="輸入秒數" min="1">
+    <h2>語音倒數</h2>
+    <input type="number" id="seconds" placeholder="秒數" min="1" inputmode="numeric">
     
+    <div id="display">0</div>
+
     <div class="controls">
         <button id="startBtn" onclick="handleStart()">開始</button>
         <button id="pauseBtn" onclick="handlePause()">暫停</button>
         <button id="resetBtn" onclick="handleReset()">重設</button>
     </div>
-
-    <div id="display">0</div>
 </div>
 
 <script>
     let timerId = null;
     let remaining = 0;
     let isPaused = false;
+    const synth = window.speechSynthesis;
 
     const startBtn = document.getElementById("startBtn");
     const pauseBtn = document.getElementById("pauseBtn");
     const inputField = document.getElementById("seconds");
     const display = document.getElementById("display");
 
-    // 1. 語音功能（優化語速防止重疊）
+    // 核心修正：強制同步語音函數
     function speak(text) {
-        window.speechSynthesis.cancel();
+        // 立即切斷之前的聲音，解決重疊與延遲堆積
+        synth.cancel(); 
+
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "zh-TW";
-        u.rate = 1.3; // 稍微加快
-        setTimeout(() => window.speechSynthesis.speak(u), 10);
+        u.rate = 1.6;  // 提升語速，確保 1 秒內唸完數字
+        u.pitch = 1.0;
+        u.volume = 1.0;
+
+        // 微小延遲確保 cancel 完全生效
+        setTimeout(() => {
+            synth.speak(u);
+        }, 5);
     }
 
-    // 2. 結束警示音效（使用 Web Audio API）
-    function playAlertSound() {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, ctx.currentTime); // A5 音符
-        osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.5);
-        
-        gain.gain.setValueAtTime(0.5, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-        
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        
-        osc.start();
-        osc.stop(ctx.currentTime + 0.5);
+    // 結束警示音
+    function playBeep() {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); 
+        gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
+
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.8);
     }
 
     function handleStart() {
@@ -99,13 +112,10 @@
         pauseBtn.style.display = "inline-block";
         inputField.disabled = true;
 
+        // 啟動瞬間立即同步
         display.textContent = remaining;
         speak(String(remaining));
 
-        runTimer();
-    }
-
-    function runTimer() {
         timerId = setInterval(() => {
             remaining--;
             
@@ -114,8 +124,8 @@
                 timerId = null;
                 display.textContent = "0";
                 speak("時間到");
-                playAlertSound();
-                handleReset();
+                playBeep();
+                handleResetUI();
                 return;
             }
 
@@ -128,7 +138,7 @@
         clearInterval(timerId);
         timerId = null;
         isPaused = true;
-        window.speechSynthesis.cancel(); // 暫停時立刻閉嘴
+        synth.cancel(); // 暫停立刻靜音
         startBtn.innerText = "繼續";
         startBtn.style.display = "inline-block";
         pauseBtn.style.display = "none";
@@ -139,9 +149,12 @@
         timerId = null;
         remaining = 0;
         isPaused = false;
-        window.speechSynthesis.cancel();
-        
+        synth.cancel();
         display.textContent = "0";
+        handleResetUI();
+    }
+
+    function handleResetUI() {
         inputField.disabled = false;
         startBtn.innerText = "開始";
         startBtn.style.display = "inline-block";
