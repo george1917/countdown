@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>專業復健陪伴 v34</title>
+    <title>35專業復健陪伴 v35</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -41,7 +41,7 @@
 <div class="container">
     <div class="nurse-header">
         <h3>專業復健陪伴</h3>
-        <p>穩定氣息 · 全程同步</p>
+        <p>精準步調 · 真人共鳴</p>
     </div>
     <div class="settings-container">
         <div class="settings-box">
@@ -73,23 +73,19 @@
     function initAudioContext() {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') audioCtx.resume();
-        
-        // 關鍵：在計時期間保持音訊通道開啟
         const buffer = audioCtx.createBuffer(1, 1, 22050);
         silentNode = audioCtx.createBufferSource();
         silentNode.buffer = buffer;
         silentNode.loop = true;
         silentNode.connect(audioCtx.destination);
         silentNode.start(0);
-
         synth.cancel();
     }
 
     function playAlarm() {
         if (!document.getElementById("voiceToggle").checked || !audioCtx) return;
         const now = audioCtx.currentTime;
-        // 使用針對 iPhone 揚聲器優化的暖心鋼琴和弦 (F-Major 9th)
-        const freqs = [349.23, 440.00, 523.25, 659.25, 783.99];
+        const freqs = [349.23, 440.00, 523.25, 659.25, 783.99]; // F-Major 9th
         freqs.forEach((freq) => {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -120,15 +116,18 @@
         u.lang = "zh-TW";
         u.voice = getVoice();
         
-        // iOS 最佳化參數：不追求極速，追求自然同步
+        // *** 針對 v35 的同步優化 ***
         if (num > 10) {
-            u.rate = 1.1; // 保持自然人聲，不產生急促感
-            u.pitch = 1.0;
+            // 雙位數：調降語速至 0.92，讓發音「撐開」到接近一秒
+            u.rate = 0.92; 
         } else {
-            u.rate = 0.8; 
-            u.pitch = 1.05;
+            // 個位數：調降語速至 0.75，呈現更溫柔穩定的導引感
+            u.rate = 0.75; 
         }
-        synth.speak(u);
+        
+        // 延遲發聲補償：個位數晚一點點唸，讓聲音結尾對準跳秒
+        let delay = (num > 10) ? 0 : 250;
+        setTimeout(() => { synth.speak(u); }, delay);
     }
 
     function handleStart() {
@@ -146,7 +145,6 @@
         document.getElementById("startBtn").style.display = "none";
         document.getElementById("pauseBtn").style.display = "inline-block";
 
-        // 第一秒立即同步顯示與發聲
         document.getElementById("display").textContent = remaining;
         speakNumber(remaining);
         remaining--;
@@ -157,8 +155,7 @@
     function runTick() {
         if (remaining > 0) {
             document.getElementById("display").textContent = remaining;
-            // 提早 50ms 發聲補償 iPhone 啟動延遲
-            setTimeout(() => speakNumber(remaining), 0);
+            speakNumber(remaining);
             remaining--;
         } else {
             clearInterval(timerId);
@@ -171,8 +168,7 @@
                 let endMsg = new SpeechSynthesisUtterance("我們休息一下");
                 endMsg.lang = "zh-TW";
                 endMsg.voice = getVoice();
-                endMsg.rate = 0.55; // 極致溫柔共鳴
-                endMsg.pitch = 1.05;
+                endMsg.rate = 0.55; 
                 synth.speak(endMsg);
             }, 800);
             resetUI();
