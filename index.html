@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>語音倒數計時器 - 終極穩定版</title>
+    <title>真人語音倒數計時器</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
@@ -41,10 +41,10 @@
 
 <div class="container">
     <div class="instruction-box">
-        <h3>【 操作提醒 】</h3>
-        <p>1. 輸入秒數後按「開始」</p>
-        <p>2. iPhone 需關閉靜音開關</p>
-        <p>3. Chrome 若無聲請重新整理</p>
+        <h3>【 真人聲音說明 】</h3>
+        <p>1. iPhone 建議關閉「省電模式」</p>
+        <p>2. 第一次按下「開始」會載入人聲</p>
+        <p>3. 聽聽看是否有真人語調</p>
     </div>
 
     <input type="number" id="seconds" placeholder="輸入秒數" min="1" inputmode="numeric" autofocus>
@@ -64,42 +64,41 @@
     const synth = window.speechSynthesis;
     const inputField = document.getElementById("seconds");
 
-    // 解決 Chrome 語音引擎初始化的核心邏輯
-    function initVoices() {
-        synth.getVoices();
-    }
+    // 解決 iOS 語音加載問題
     window.onload = () => {
-        initVoices();
-        if (synth.onvoiceschanged !== undefined) {
-            synth.onvoiceschanged = initVoices;
-        }
+        synth.getVoices();
         inputField.focus();
     };
 
     function speak(text) {
-        // 先暫停所有正在說的話，這是防止語音重疊與卡死的關鍵
         synth.cancel(); 
         
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "zh-TW";
-        u.rate = 1.7; 
-        u.pitch = 0.95;
         
-        // 挑選人聲邏輯優化
+        // --- 核心優化：iPhone 高品質人聲篩選 ---
         const voices = synth.getVoices();
-        const preferred = voices.find(v => v.lang.includes('zh-TW') && (v.name.includes('Premium') || v.name.includes('Enhanced'))) || 
-                          voices.find(v => v.lang.includes('zh-TW'));
-        if (preferred) u.voice = preferred;
+        
+        // 優先搜尋名稱包含 "Meijia" (美佳) 或 "Premium" 的台灣人聲
+        const premiumVoice = voices.find(v => v.lang.includes('zh-TW') && (v.name.includes('Premium') || v.name.includes('Enhanced'))) ||
+                             voices.find(v => v.lang.includes('zh-TW') && v.name.includes('Meijia')) ||
+                             voices.find(v => v.lang.includes('zh-TW'));
+        
+        if (premiumVoice) {
+            u.voice = premiumVoice;
+        }
 
-        // Chrome 需要稍微延遲一點呼叫 speak 以確保 cancel 完成
+        u.rate = 1.6;  // 語速稍微放緩一點點，讓口語更清晰
+        u.pitch = 0.9; // 降低音調，聲音會更像真人
+        u.volume = 1.0;
+
         setTimeout(() => {
             synth.speak(u);
-        }, 5);
+        }, 15);
     }
 
     function playAlarm() {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (!AudioCtx) return;
         const audioCtx = new AudioCtx();
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
@@ -113,14 +112,14 @@
     }
 
     function handleStart() {
-        // iPhone/Chrome 必要：在使用者點擊事件的「第一時間」解鎖
+        // iPhone/Safari 必要：啟動音訊與語音授權
         const unlock = new SpeechSynthesisUtterance("");
         synth.speak(unlock);
 
         if (!isPaused) {
             const val = parseInt(inputField.value, 10);
             if (isNaN(val) || val <= 0) {
-                alert("請輸入正確秒數");
+                alert("請輸入秒數");
                 return;
             }
             remaining = val;
