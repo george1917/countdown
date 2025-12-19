@@ -3,76 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>語音鈴聲倒數器 iPhone 版</title>
+    <title>語音鈴聲倒數器 iPhone 優化版</title>
     <style>
         * { 
             box-sizing: border-box; 
-            -webkit-tap-highlight-color: transparent; /* 移除 iPhone 點擊時的灰色區塊 */
+            -webkit-tap-highlight-color: transparent;
         }
         body {
             margin: 0; 
-            height: 100dvh; /* 使用 dvh 確保在 Safari 網址列縮放時高度正確 */
+            height: 100dvh;
             display: flex; align-items: center; justify-content: center;
-            background: #f2f2f7; /* iOS 系統風格背景色 */
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+            background: #f2f2f7;
+            font-family: -apple-system, "Microsoft JhengHei", sans-serif;
         }
         .container {
-            width: 90%; max-width: 400px; padding: 25px;
+            width: 92%; max-width: 450px; padding: 25px;
             background: #ffffff; border-radius: 30px;
             box-shadow: 0 8px 30px rgba(0,0,0,0.1);
         }
 
-        /* --- 使用說明：針對手機微調尺寸 --- */
+        /* --- 使用說明：恢復藍橘配色並保持大字體 --- */
         .instruction-box {
             background: #fff9db; 
             border: 3px solid #f08c00;
             border-radius: 20px;
-            padding: 20px !important;
-            margin-bottom: 20px !important;
+            padding: 22px !important;
+            margin-bottom: 25px !important;
             text-align: left;
         }
         .instruction-box h3 {
             margin: 0 0 10px 0 !important;
-            font-size: 28px !important; /* 適合手機的標題大小 */
+            font-size: 32px !important; /* 適合長輩的大標題 */
             color: #e67700 !important;
             font-weight: 900 !important;
         }
         .instruction-box p {
-            margin: 6px 0 !important;
-            font-size: 20px !important; /* 適合手機的內文大小 */
+            margin: 8px 0 !important;
+            font-size: 24px !important; /* 適合長輩的大內文 */
             color: #2b2f33 !important;
-            line-height: 1.3 !important;
+            line-height: 1.4 !important;
             font-weight: 700 !important;
         }
 
-        /* --- 輸入與顯示：針對 iPhone 虛擬鍵盤優化 --- */
+        /* --- 輸入與顯示 --- */
         input[type="number"] {
-            width: 100%; font-size: 32px; padding: 15px; margin-bottom: 15px;
+            width: 100%; font-size: 36px; padding: 18px; margin-bottom: 15px;
             border: 2px solid #c6c6c8; border-radius: 14px; text-align: center;
             outline: none; background: #f2f2f7;
-            -webkit-appearance: none; /* 移除 iOS 預設內陰影 */
+            -webkit-appearance: none;
         }
 
         #display {
-            font-size: 110px; /* 稍微縮小以適應手機直向顯示 */
-            font-weight: 900; color: #000000;
-            margin: 5px 0; text-align: center;
-            font-family: -apple-system, sans-serif;
+            font-size: 130px; 
+            font-weight: 900; color: #1c1e21;
+            margin: 10px 0; text-align: center;
             font-variant-numeric: tabular-nums;
         }
 
-        /* --- 按鈕：加大觸控面積 (iOS 風格) --- */
-        .controls { display: flex; gap: 12px; }
+        /* --- 按鈕：橫向排版與優雅配色 --- */
+        .controls { 
+            display: flex; 
+            gap: 12px; 
+        }
         button {
-            flex: 1; font-size: 22px; font-weight: 700; padding: 18px;
-            border: none; border-radius: 15px; cursor: pointer;
+            flex: 1; 
+            font-size: 22px; 
+            font-weight: 700; 
+            padding: 18px 5px; 
+            border: none; 
+            border-radius: 15px; 
+            cursor: pointer;
+            white-space: nowrap; 
             transition: transform 0.1s, opacity 0.1s;
         }
         #startBtn { background: #007aff; color: white; }
         #pauseBtn { background: #ff9500; color: white; display: none; }
-        #resetBtn { background: #e5e5ea; color: #000000; }
+        #resetBtn { background: #e5e5ea; color: #1c1e21; }
         
-        /* iPhone 點擊反饋 */
         button:active { transform: scale(0.92); opacity: 0.8; }
     </style>
 </head>
@@ -91,7 +98,7 @@
     <div id="display">0</div>
 
     <div class="controls">
-        <button id="startBtn" onclick="handleStart()">開始</button>
+        <button id="startBtn" onclick="handleStart()">開始倒數</button>
         <button id="pauseBtn" onclick="handlePause()">暫停</button>
         <button id="resetBtn" onclick="handleReset()">重設</button>
     </div>
@@ -104,11 +111,8 @@
     const synth = window.speechSynthesis;
     const inputField = document.getElementById("seconds");
 
-    // 針對 iPhone 鎖定頁面滑動與縮放
-    document.addEventListener('gesturestart', function(e) {
-        e.preventDefault();
-    });
-
+    // 針對 iPhone 的觸控優化
+    document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
     window.onload = () => inputField.focus();
 
     function speak(text) {
@@ -116,7 +120,6 @@
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "zh-TW";
         u.rate = 1.7; 
-        // iPhone 在靜音模式下可能無聲，提醒使用者開啟聲音
         setTimeout(() => synth.speak(u), 5);
     }
 
@@ -134,12 +137,13 @@
             osc.start(time);
             osc.stop(time + 0.3);
         }
+        // 經典兩聲嗶嗶音
         beep(audioCtx.currentTime, 880);
         beep(audioCtx.currentTime + 0.4, 880);
     }
 
     function handleStart() {
-        // iPhone 必須在使用者點擊按鈕的瞬間啟動 AudioContext
+        // iPhone 啟動聲音權限
         const dummyCtx = new (window.AudioContext || window.webkitAudioContext)();
         
         if (!isPaused) {
@@ -175,7 +179,7 @@
         timerId = null;
         isPaused = true;
         synth.cancel();
-        document.getElementById("startBtn").innerText = "繼續";
+        document.getElementById("startBtn").innerText = "繼續倒數";
         document.getElementById("startBtn").style.display = "inline-block";
         document.getElementById("pauseBtn").style.display = "none";
     }
@@ -192,7 +196,7 @@
 
     function resetUI() {
         inputField.disabled = false;
-        document.getElementById("startBtn").innerText = "開始";
+        document.getElementById("startBtn").innerText = "開始倒數";
         document.getElementById("startBtn").style.display = "inline-block";
         document.getElementById("pauseBtn").style.display = "none";
         setTimeout(() => inputField.focus(), 100);
