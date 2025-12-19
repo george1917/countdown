@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>專業復健治療師計時器 v19</title>
+    <title>專業復健陪伴 v20</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -36,7 +36,6 @@
         #startBtn { background: #339af0; color: white; }
         #pauseBtn { background: #fab005; color: white; display: none; }
         #resetBtn { background: #dee2e6; color: #495057; }
-        button:active { transform: scale(0.96); }
     </style>
 </head>
 <body>
@@ -80,13 +79,14 @@
         if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
-    // A大調九和弦鈴聲 (A4, C#5, E5, G#5, B5) - 充滿質感與療癒
+    // 暖心鋼琴和弦鈴聲 (F-Major 9th: F4, A4, C5, E5, G5)
     function playAlarm() {
         if (!document.getElementById("voiceToggle").checked) return;
         wakeUpAudio();
         const now = audioCtx.currentTime;
-        const freqs = [440.00, 554.37, 659.25, 830.61, 987.77];
-        freqs.forEach((freq) => {
+        // 使用更圓潤的正弦波組合
+        const freqs = [349.23, 440.00, 523.25, 659.25, 783.99];
+        freqs.forEach((freq, i) => {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = 'sine';
@@ -94,13 +94,15 @@
             gain.connect(audioCtx.destination);
             osc.frequency.setValueAtTime(freq, now);
             gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(0.15, now + 0.1); 
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
+            // 模擬鋼琴觸鍵的漸強漸弱
+            gain.gain.linearRampToValueAtTime(0.1, now + 0.1); 
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 2.5);
             osc.start(now);
-            osc.stop(now + 2.2);
+            osc.stop(now + 2.6);
         });
     }
 
+    // 耳邊叮嚀調律器
     function createMsg(text, rate = 0.8, pitch = 1.1) {
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "zh-TW";
@@ -113,16 +115,6 @@
         u.rate = rate;
         u.pitch = pitch;
         return u;
-    }
-
-    // 模擬耳邊叮嚀的複音發聲
-    function speakEnding() {
-        synth.cancel();
-        // 將語句分開，給予不同的「呼吸感」
-        const m1 = createMsg("我們", 0.65, 1.15);
-        const m2 = createMsg("休息一下", 0.6, 1.05);
-        synth.speak(m1);
-        setTimeout(() => synth.speak(m2), 600);
     }
 
     function handleStart() {
@@ -141,7 +133,8 @@
         
         if (document.getElementById("countToggle").checked) {
             synth.cancel();
-            synth.speak(createMsg(String(remaining), 0.85, 1.1));
+            // 報數加入句號。模擬真人一個字一個字的叮嚀語氣
+            synth.speak(createMsg(remaining + "。", 0.75, 1.1));
         }
 
         timerId = setInterval(() => {
@@ -151,7 +144,11 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm(); 
-                setTimeout(speakEnding, 1200);
+                // 鈴聲後 1.2 秒發聲，使用極慢語速 0.55 營造耳邊叮嚀感
+                setTimeout(() => {
+                    synth.cancel();
+                    synth.speak(createMsg("我們休息一下。", 0.55, 1.1));
+                }, 1200);
                 resetUI();
                 return;
             }
@@ -159,12 +156,10 @@
             
             if (document.getElementById("countToggle").checked) {
                 synth.cancel();
-                // 動態節奏：倒數最後5秒增加鼓勵感，聲音更溫柔緩慢
-                if (remaining <= 5) {
-                    synth.speak(createMsg(String(remaining), 0.7, 1.15));
-                } else {
-                    synth.speak(createMsg(String(remaining), 0.85, 1.1));
-                }
+                // 動態調整最後三秒的鼓勵感
+                let r = (remaining <= 3) ? 0.65 : 0.75;
+                let p = (remaining <= 3) ? 1.15 : 1.1;
+                synth.speak(createMsg(remaining + "。", r, p));
             }
         }, 1000);
     }
@@ -195,9 +190,7 @@
         document.getElementById("startBtn").innerText = "開始";
         document.getElementById("startBtn").style.display = "inline-block";
         document.getElementById("pauseBtn").style.display = "none";
-        window.scrollTo(0, 0);
     }
-    
     window.onload = () => { synth.getVoices(); };
 </script>
 
