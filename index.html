@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>專業復健陪伴 v41</title>
+    <title>42專業復健陪伴 v42</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -41,7 +41,7 @@
 <div class="container">
     <div class="nurse-header">
         <h3>專業復健陪伴</h3>
-        <p>跨環境同步 · 護理師質感</p>
+        <p>Chrome 節奏優化 · 護理師質感</p>
     </div>
     <div class="settings-container">
         <div class="settings-box">
@@ -70,7 +70,7 @@
     let audioCtx = null;
     let keepAliveNode = null;
 
-    // 精準判定環境：Chrome 與 iPhone 的時序完全不同
+    // 精準環境偵測
     const isChromeDesktop = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor) && !/Mobile/.test(navigator.userAgent);
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
@@ -122,17 +122,16 @@
         u.voice = getVoice();
         u.pitch = 1.05;
         
-        // *** 核心同步修正：針對 Chrome 報數過快進行壓慢 ***
         let rate, delay;
-        if (isIOS) {
+        if (isChromeDesktop) {
+            // *** Chrome 深度鎖定：壓慢語速並增加大幅度延遲發聲 ***
+            rate = (num > 10) ? 0.75 : 0.60;
+            delay = (num > 10) ? 400 : 450;
+        } else if (isIOS) {
             rate = (num > 10) ? 0.92 : 0.75;
             delay = (num > 10) ? 0 : 250;
-        } else if (isChromeDesktop) {
-            // Chrome 桌面版：大幅壓慢雙位數語速，解決「倒數比聲音快」
-            rate = (num > 10) ? 0.80 : 0.65;
-            delay = (num > 10) ? 150 : 350;
         } else {
-            rate = 0.85;
+            rate = 0.8;
             delay = 200;
         }
         
@@ -151,9 +150,12 @@
         isPaused = false;
         document.getElementById("startBtn").style.display = "none";
         document.getElementById("pauseBtn").style.display = "inline-block";
+        
+        // 第一秒同步
         document.getElementById("display").textContent = remaining;
         speakNumber(remaining);
         remaining--;
+        
         timerId = setInterval(runTick, 1000);
     }
 
@@ -172,8 +174,7 @@
                 let endMsg = new SpeechSynthesisUtterance("我們休息一下");
                 endMsg.lang = "zh-TW";
                 endMsg.voice = getVoice();
-                // 結束語同樣針對 Chrome 壓慢，確保氣息感
-                endMsg.rate = (isChromeDesktop) ? 0.45 : 0.52; 
+                endMsg.rate = (isChromeDesktop) ? 0.42 : 0.52; 
                 synth.speak(endMsg);
             }, 1200); 
             resetUI();
