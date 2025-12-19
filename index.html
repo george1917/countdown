@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>專業復健計時器</title>
+    <title>14專業復健治療師計時器</title>
     <style>
+        /* 畫面結構完全鎖定，不作變動 */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
         body {
@@ -19,19 +20,16 @@
         .nurse-header { text-align: center; margin-bottom: 20px; }
         .nurse-header h3 { margin: 0; font-size: 28px; color: #1c7ed6; letter-spacing: 1px; }
         .nurse-header p { margin: 8px 0 0; font-size: 20px; color: #868e96; font-weight: 500; }
-        
         .settings-container { background: #f8f9fa; border-radius: 20px; padding: 15px; margin-bottom: 20px; }
         .settings-box { display: flex; align-items: center; gap: 15px; padding: 8px 0; }
         .settings-box label { font-size: 22px; font-weight: 700; color: #495057; cursor: pointer; }
         input[type="checkbox"] { transform: scale(1.8); cursor: pointer; }
-
         input[type="number"] {
             width: 100%; font-size: 48px; padding: 18px; margin-bottom: 20px;
             border: 2px solid #e9ecef; border-radius: 20px; text-align: center; outline: none; background: #f8f9fa;
             color: #212529; font-weight: bold;
         }
         #display { font-size: 130px; font-weight: 900; color: #212529; margin: 15px 0; text-align: center; font-variant-numeric: tabular-nums; line-height: 1; }
-        
         .controls { display: flex; gap: 12px; }
         button {
             flex: 1; font-size: 24px; font-weight: 700; padding: 22px 10px; border: none; border-radius: 20px; cursor: pointer; transition: 0.1s;
@@ -85,11 +83,12 @@
         if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
+    // 醫療舒壓鈴聲：B大調九和弦 (B4, D#5, F#5, A#5)
     function playAlarm() {
         if (!document.getElementById("voiceToggle").checked) return;
         wakeUpAudio();
         const now = audioCtx.currentTime;
-        const freqs = [440.00, 554.37, 659.25, 880.00];
+        const freqs = [493.88, 622.25, 739.99, 932.33];
         freqs.forEach((freq) => {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -105,8 +104,10 @@
         });
     }
 
+    // 治療師核心優化：對標 26 歲專業語感
     function createMsg(text, isEnding = false) {
-        const u = new SpeechSynthesisUtterance(text + " ");
+        // 在結尾增加不可見標點，觸發 iOS 語音引擎的擬真語調起伏
+        const u = new SpeechSynthesisUtterance(text + "。 ");
         u.lang = "zh-TW";
         const voices = synth.getVoices();
         const target = voices.find(v => v.name.includes('Meijia') && v.name.includes('Premium')) || 
@@ -116,10 +117,10 @@
         
         u.volume = 1.0;
         if (isEnding) {
-            u.rate = 0.82; 
-            u.pitch = 1.1; 
+            u.rate = 0.8;   // 叮嚀語速較慢，展現溫柔感
+            u.pitch = 1.08; // 26 歲清亮聲線
         } else {
-            u.rate = 0.85; 
+            u.rate = 0.85;  // 報數節奏穩定清晰
             u.pitch = 1.05;
         }
         return u;
@@ -151,10 +152,11 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm(); 
+                // 強制延遲，模擬真人在觀察患者反應後才開口叮嚀
                 setTimeout(() => {
                     synth.cancel();
                     synth.speak(createMsg("我們休息一下", true));
-                }, 600);
+                }, 800);
                 resetUI();
                 return;
             }
