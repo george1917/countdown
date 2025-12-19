@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>專業復健陪伴 v30</title>
+    <title>31專業復健陪伴 v31</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -43,7 +43,7 @@
 <div class="container">
     <div class="nurse-header">
         <h3>專業復健陪伴</h3>
-        <p>精準同步 · 溫柔陪伴</p>
+        <p>瞬時啟動 · 精準同步</p>
     </div>
     <div class="settings-container">
         <div class="settings-box">
@@ -70,16 +70,23 @@
     let isPaused = false;
     const synth = window.speechSynthesis;
     let audioCtx = null;
-    const inputField = document.getElementById("seconds");
+
+    function getVoice() {
+        const voices = synth.getVoices();
+        return voices.find(v => v.name.includes('Meijia') && v.name.includes('Premium')) || 
+               voices.find(v => v.lang.includes('zh-TW') && v.name.includes('Premium')) ||
+               voices.find(v => v.lang.includes('zh-TW'));
+    }
 
     function wakeUpAudio() {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') audioCtx.resume();
+        // 預熱語音引擎
+        synth.speak(new SpeechSynthesisUtterance(""));
     }
 
     function playAlarm() {
         if (!document.getElementById("voiceToggle").checked) return;
-        wakeUpAudio();
         const now = audioCtx.currentTime;
         const freqs = [261.63, 329.63, 392.00, 493.88, 587.33];
         freqs.forEach((freq) => {
@@ -97,68 +104,64 @@
         });
     }
 
-    function getVoice() {
-        const voices = synth.getVoices();
-        return voices.find(v => v.name.includes('Meijia') && v.name.includes('Premium')) || 
-               voices.find(v => v.lang.includes('zh-TW') && v.name.includes('Premium')) ||
-               voices.find(v => v.lang.includes('zh-TW'));
+    function speakNumber(num) {
+        if (!document.getElementById("countToggle").checked) return;
+        synth.cancel();
+        let u = new SpeechSynthesisUtterance(String(num));
+        u.lang = "zh-TW";
+        u.voice = getVoice();
+        u.pitch = 1.1;
+        // 同步核心：雙位數極速(1.7)，個位數慢唸(0.6)
+        u.rate = (num > 10) ? 1.7 : 0.6;
+        
+        if (num <= 10) {
+            // 個位數微調起跑，讓聲音結束點對位跳秒
+            setTimeout(() => { synth.speak(u); }, 100);
+        } else {
+            synth.speak(u);
+        }
     }
 
     function handleStart() {
+        const inputField = document.getElementById("seconds");
         inputField.blur();
         wakeUpAudio();
+
         if (!isPaused) {
             remaining = parseInt(inputField.value, 10);
             if (isNaN(remaining) || remaining <= 0) return;
             inputField.disabled = true;
         }
+        
         isPaused = false;
         document.getElementById("startBtn").style.display = "none";
         document.getElementById("pauseBtn").style.display = "inline-block";
-        
-        runTick();
+
+        // *** 重大優化：先發聲，後啟動計時器 ***
+        speakNumber(remaining);
+        document.getElementById("display").textContent = remaining;
+        remaining--;
+
         timerId = setInterval(runTick, 1000);
     }
 
     function runTick() {
-        const display = document.getElementById("display");
-        const countEnabled = document.getElementById("countToggle").checked;
-
         if (remaining > 0) {
-            display.textContent = remaining;
-            if (countEnabled) {
-                synth.cancel();
-                // 核心同步邏輯拆分
-                let utterance = new SpeechSynthesisUtterance(String(remaining));
-                utterance.lang = "zh-TW";
-                utterance.voice = getVoice();
-                utterance.pitch = 1.1;
-
-                if (remaining > 10) {
-                    // 雙位數：極速噴發模式，趕在視覺跳動前結束
-                    utterance.rate = 1.7; 
-                    synth.speak(utterance);
-                } else {
-                    // 個位數：慢速悠閒模式，拉長發音對齊一秒
-                    utterance.rate = 0.6; 
-                    // 微延遲發音起點，讓聲音「結束」的那一刻剛好跳下一個數字
-                    setTimeout(() => { synth.speak(utterance); }, 150);
-                }
-            }
+            document.getElementById("display").textContent = remaining;
+            speakNumber(remaining);
             remaining--;
         } else {
             clearInterval(timerId);
             timerId = null;
-            display.textContent = "0";
+            document.getElementById("display").textContent = "0";
             playAlarm(); 
-            // 結束語完全獨立處理
             setTimeout(() => {
                 if (!document.getElementById("voiceToggle").checked) return;
                 synth.cancel();
                 let endMsg = new SpeechSynthesisUtterance("我們休息一下");
                 endMsg.lang = "zh-TW";
                 endMsg.voice = getVoice();
-                endMsg.rate = 0.52; // 護理師質感慢語速
+                endMsg.rate = 0.52;
                 endMsg.pitch = 1.05;
                 synth.speak(endMsg);
             }, 700);
@@ -182,6 +185,7 @@
     }
 
     function resetUI() {
+        const inputField = document.getElementById("seconds");
         inputField.disabled = false;
         inputField.value = '';
         document.getElementById("startBtn").innerText = "開始";
