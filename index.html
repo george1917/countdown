@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>40專業復健陪伴 v40</title>
+    <title>專業復健陪伴 v41</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -41,7 +41,7 @@
 <div class="container">
     <div class="nurse-header">
         <h3>專業復健陪伴</h3>
-        <p>全平台對位 · 真人質感版</p>
+        <p>跨環境同步 · 護理師質感</p>
     </div>
     <div class="settings-container">
         <div class="settings-box">
@@ -70,7 +70,8 @@
     let audioCtx = null;
     let keepAliveNode = null;
 
-    // 辨別是否為 iPhone
+    // 精準判定環境：Chrome 與 iPhone 的時序完全不同
+    const isChromeDesktop = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor) && !/Mobile/.test(navigator.userAgent);
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
     function initAudio() {
@@ -119,17 +120,20 @@
         let u = new SpeechSynthesisUtterance(String(num));
         u.lang = "zh-TW";
         u.voice = getVoice();
+        u.pitch = 1.05;
         
-        // *** 跨平台動態語速校準 ***
+        // *** 核心同步修正：針對 Chrome 報數過快進行壓慢 ***
         let rate, delay;
         if (isIOS) {
-            // iPhone 專屬參數
             rate = (num > 10) ? 0.92 : 0.75;
             delay = (num > 10) ? 0 : 250;
+        } else if (isChromeDesktop) {
+            // Chrome 桌面版：大幅壓慢雙位數語速，解決「倒數比聲音快」
+            rate = (num > 10) ? 0.80 : 0.65;
+            delay = (num > 10) ? 150 : 350;
         } else {
-            // Chrome/桌面 專屬參數：壓慢語速避免聲音跑在視覺前面
-            rate = (num > 10) ? 0.85 : 0.7;
-            delay = (num > 10) ? 100 : 300;
+            rate = 0.85;
+            delay = 200;
         }
         
         setTimeout(() => { synth.speak(u); }, delay);
@@ -168,8 +172,8 @@
                 let endMsg = new SpeechSynthesisUtterance("我們休息一下");
                 endMsg.lang = "zh-TW";
                 endMsg.voice = getVoice();
-                // 結束語同樣區分平台速度，確保共鳴感
-                endMsg.rate = isIOS ? 0.52 : 0.48; 
+                // 結束語同樣針對 Chrome 壓慢，確保氣息感
+                endMsg.rate = (isChromeDesktop) ? 0.45 : 0.52; 
                 synth.speak(endMsg);
             }, 1200); 
             resetUI();
