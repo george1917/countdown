@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>真人報數倒數器</title>
+    <title>真人感語音倒數計時器</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
@@ -41,9 +41,9 @@
 
 <div class="container">
     <div class="instruction-box">
-        <h3>【 真人報數優化 】</h3>
-        <p>1. 點擊輸入框會清空數字</p>
-        <p>2. 按下「開始」啟動真人語音</p>
+        <h3>【 操作說明 】</h3>
+        <p>1. 點擊輸入框會清空內容</p>
+        <p>2. 結束時嗶一聲並報數</p>
     </div>
 
     <input type="number" id="seconds" placeholder="輸入秒數" min="1" inputmode="numeric" autofocus>
@@ -64,7 +64,7 @@
     let audioCtx = null;
     const inputField = document.getElementById("seconds");
 
-    // 點擊清空邏輯
+    // 修正：確保 focus 時清空
     inputField.addEventListener('focus', function() { this.value = ''; });
 
     window.onload = () => {
@@ -81,7 +81,7 @@
         osc.type = 'sine';
         osc.frequency.setValueAtTime(880, audioCtx.currentTime);
         gain.gain.setValueAtTime(0, audioCtx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.05);
+        gain.gain.linearRampToValueAtTime(0.4, audioCtx.currentTime + 0.05);
         gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
         osc.start();
         osc.stop(audioCtx.currentTime + 0.5);
@@ -92,27 +92,31 @@
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "zh-TW";
         
-        // --- 深度優化人聲選擇 ---
+        // --- 核心優化：優先匹配高品質人聲 ---
         const voices = synth.getVoices();
-        
-        // 優先順序：1. 台灣高品質人聲 2. 台灣一般人聲 3. 香港/大陸高品質人聲 (作為墊底)
-        const target = voices.find(v => v.lang.includes('zh-TW') && (v.name.includes('Premium') || v.name.includes('Enhanced'))) || 
-                       voices.find(v => v.lang.includes('zh-TW')) ||
-                       voices.find(v => v.lang.includes('zh-HK') && v.name.includes('Premium'));
-        
-        if (target) u.voice = target;
+        const preferred = ["Meijia (Premium)", "Meijia", "Sinji", "Yating", "Li-Mu"];
+        let targetVoice = null;
 
-        // 模擬真人語氣參數
-        u.rate = 1.5;   // 報數稍微俐落一點
-        u.pitch = 0.92; // 降低音頻，聽起來比較沉穩像真人
+        for (let name of preferred) {
+            targetVoice = voices.find(v => v.name.includes(name) && v.lang.includes('zh-TW'));
+            if (targetVoice) break;
+        }
+        
+        if (!targetVoice) targetVoice = voices.find(v => v.lang.includes('zh-TW'));
+        if (targetVoice) u.voice = targetVoice;
+
+        // 模擬真人語調：語速快一點較不機械，音調微降較穩重
+        u.rate = 1.6;  
+        u.pitch = 0.85; 
         u.volume = 1.0;
 
         setTimeout(() => synth.speak(u), 10);
     }
 
     function handleStart() {
-        // 解鎖音訊
-        synth.speak(new SpeechSynthesisUtterance(""));
+        // iPhone 聲音授權
+        const unlock = new SpeechSynthesisUtterance("");
+        synth.speak(unlock);
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') audioCtx.resume();
 
