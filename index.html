@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>真人語音計時器 - 大師調音</title>
+    <title>真人計時器 - 極致音質</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -80,7 +80,6 @@
     let isPaused = false;
     const synth = window.speechSynthesis;
     let audioCtx = null;
-    let silentNode = null;
     const inputField = document.getElementById("seconds");
     const voiceToggle = document.getElementById("voiceToggle");
     const countToggle = document.getElementById("countToggle");
@@ -102,6 +101,7 @@
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.type = 'sine';
         osc.frequency.setValueAtTime(880, now);
         gain.gain.setValueAtTime(0, now);
         gain.gain.linearRampToValueAtTime(0.4, now + 0.02);
@@ -114,37 +114,32 @@
         if (force && !voiceToggle.checked) return;
 
         synth.cancel(); 
-        // 關鍵調音 1：加入微小停頓標點，讓高品質語音包觸發自然尾音
-        const u = new SpeechSynthesisUtterance(text + ", ");
+        // 核心調音：加入引導停頓，讓語音包產生自然語感收尾
+        const u = new SpeechSynthesisUtterance(text + "... ");
         u.lang = "zh-TW";
 
         const voices = synth.getVoices();
-        // 優先搜尋「美佳 (高品質)」
         const target = voices.find(v => v.name.includes('Meijia') && v.name.includes('Premium')) || 
                        voices.find(v => v.lang.includes('zh-TW') && v.name.includes('Premium')) ||
                        voices.find(v => v.lang.includes('zh-TW'));
         if (target) u.voice = target;
 
         if (isIOS) {
-            // 關鍵調音 2：極限參數，消除金屬感
-            u.rate = 0.82;   // 稍慢，讓每個字更飽滿
-            u.pitch = 0.01;  // 極限低音，消除尖銳感
-            u.volume = 1.0;  // 滿量輸出以補償低音
+            u.rate = 0.78;   // 報數更加沈穩
+            u.pitch = 0.0;   // 聲帶下沉感優化
+            u.volume = 0.92; // 避免數位過載噪音
         } else {
-            u.rate = 1.0; u.pitch = 1.0; 
+            u.rate = 0.95; u.pitch = 1.0; 
         }
         
-        // 關鍵調音 3：微小延遲，確保 iPhone 緩衝區乾淨
         setTimeout(() => synth.speak(u), 10);
     }
 
     function handleStart() {
         inputField.blur();
         wakeUpAudio();
-        // 預熱語音：解決 iPhone 第一秒沒聲音或爆音的問題
-        const warmup = new SpeechSynthesisUtterance("");
-        warmup.volume = 0;
-        synth.speak(warmup);
+        // 語音引擎啟動權限
+        synth.speak(new SpeechSynthesisUtterance(""));
 
         if (!isPaused) {
             remaining = parseInt(inputField.value, 10);
@@ -157,8 +152,7 @@
         document.getElementById("pauseBtn").style.display = "inline-block";
         document.getElementById("display").textContent = remaining;
         
-        // 第一秒報數
-        setTimeout(() => speak(String(remaining)), 100);
+        speak(String(remaining));
 
         timerId = setInterval(() => {
             remaining--;
@@ -167,7 +161,7 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm();
-                setTimeout(() => speak("時間到了", true), 600); 
+                setTimeout(() => speak("時間到了", true), 650); 
                 resetUI();
                 return;
             }
