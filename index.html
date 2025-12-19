@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>真人語音計時器 - 鈴聲強化版</title>
+    <title>真人感語音計時器</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
@@ -77,7 +77,7 @@
     let isPaused = false;
     const synth = window.speechSynthesis;
     let audioCtx = null;
-    let silentNode = null; // 保持 iPhone 清醒的節點
+    let silentNode = null;
     const inputField = document.getElementById("seconds");
     const voiceToggle = document.getElementById("voiceToggle");
 
@@ -85,19 +85,13 @@
 
     inputField.addEventListener('focus', function() { this.value = ''; });
 
-    // 啟動並保持音訊環境不進入休眠
     function wakeUpAudio() {
-        if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
-        // 播放一段極微弱的靜音，防止 iPhone 音頻自動休眠
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
         if (!silentNode) {
             silentNode = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            gain.gain.value = 0.001; // 幾近無聲
+            gain.gain.value = 0.001; 
             silentNode.connect(gain);
             gain.connect(audioCtx.destination);
             silentNode.start();
@@ -107,23 +101,17 @@
     function playAlarm() {
         if (!voiceToggle.checked) return;
         wakeUpAudio();
-        
-        const playTone = (time, freq) => {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(freq, time);
-            gain.gain.setValueAtTime(0, time);
-            gain.gain.linearRampToValueAtTime(0.4, time + 0.05);
-            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.35);
-            osc.start(time);
-            osc.stop(time + 0.4);
-        };
-
         const now = audioCtx.currentTime;
-        playTone(now, 880);       // 第一聲高
-        playTone(now + 0.45, 784); // 第二聲低
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, now);
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.5, now + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+        osc.start(now);
+        osc.stop(now + 0.5);
     }
 
     function speak(text) {
@@ -139,10 +127,10 @@
         if (target) u.voice = target;
 
         if (isIOS) {
-            u.rate = 0.95;
-            u.pitch = 0.3; // 持續壓低音調修正機械感
+            u.rate = 0.9;  // 速度放慢，增加沉穩感
+            u.pitch = 0.2; // 極低音調，徹底抵銷數位尖銳音
         } else {
-            u.rate = 1.2;  
+            u.rate = 1.1;  
             u.pitch = 0.9; 
         }
         
@@ -150,10 +138,8 @@
     }
 
     function handleStart() {
-        wakeUpAudio(); // 啟動並防休眠
-        if (voiceToggle.checked) {
-            synth.speak(new SpeechSynthesisUtterance("")); 
-        }
+        wakeUpAudio();
+        if (voiceToggle.checked) synth.speak(new SpeechSynthesisUtterance(""));
 
         if (!isPaused) {
             remaining = parseInt(inputField.value, 10);
@@ -174,8 +160,7 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm();
-                // 鈴聲先響完，語音再說話
-                setTimeout(() => speak("時間到了"), 1100); 
+                setTimeout(() => speak("時間到了"), 800); 
                 resetUI();
                 return;
             }
@@ -199,10 +184,7 @@
         timerId = null;
         remaining = 0;
         isPaused = false;
-        if (silentNode) {
-            silentNode.stop();
-            silentNode = null;
-        }
+        if (silentNode) { silentNode.stop(); silentNode = null; }
         synth.cancel();
         document.getElementById("display").textContent = "0";
         resetUI();
@@ -217,10 +199,7 @@
         setTimeout(() => inputField.focus(), 150);
     }
     
-    window.onload = () => {
-        synth.getVoices();
-        inputField.focus();
-    };
+    window.onload = () => { synth.getVoices(); inputField.focus(); };
 </script>
 
 </body>
