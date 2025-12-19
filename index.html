@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>自然語音倒數計時器</title>
+    <title>iPhone 語音倒數修正版</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
@@ -41,17 +41,17 @@
 
 <div class="container">
     <div class="instruction-box">
-        <h3>【 使用說明 】</h3>
-        <p>1. 輸入秒數</p>
-        <p>2. 按下「開始」</p>
-        <p>3. 聽優化後的人聲報數</p>
+        <h3>【 操作提醒 】</h3>
+        <p>1. 確認手機<b>左側靜音開關</b>已關閉</p>
+        <p>2. 確認<b>音量</b>已調大</p>
+        <p>3. 點擊「開始」解鎖聲音</p>
     </div>
 
     <input type="number" id="seconds" placeholder="秒數" min="1" inputmode="numeric" autofocus>
     <div id="display">0</div>
 
     <div class="controls">
-        <button id="startBtn" onclick="handleStart()">開始倒數</button>
+        <button id="startBtn" onclick="iphoneSafeStart()">開始倒數</button>
         <button id="pauseBtn" onclick="handlePause()">暫停</button>
         <button id="resetBtn" onclick="handleReset()">重設</button>
     </div>
@@ -64,38 +64,25 @@
     const synth = window.speechSynthesis;
     const inputField = document.getElementById("seconds");
 
-    document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
+    // 預加載人聲列表
     window.onload = () => {
+        synth.getVoices();
         inputField.focus();
-        // 解決 Chrome/Safari 初次載入 getVoices 可能為空的問題
-        if (synth.onvoiceschanged !== undefined) {
-            synth.onvoiceschanged = () => synth.getVoices();
-        }
     };
 
     function speak(text) {
         synth.cancel(); 
-        
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "zh-TW";
+        u.rate = 1.7; 
+        u.pitch = 0.95;
         
-        // --- 核心優化：人聲選擇邏輯 ---
         const voices = synth.getVoices();
-        // 優先順序：台灣高品質人聲 > 台灣標準人聲 > 普通話高品質人聲
         const targetVoice = voices.find(v => v.lang.includes('zh-TW') && (v.name.includes('Premium') || v.name.includes('Enhanced'))) || 
-                           voices.find(v => v.lang.includes('zh-TW')) || 
-                           voices.find(v => v.lang.includes('zh-CN') && v.name.includes('Premium'));
-        
+                           voices.find(v => v.lang.includes('zh-TW'));
         if (targetVoice) u.voice = targetVoice;
 
-        // --- 參數微調：減少機器感 ---
-        u.rate = 1.6;  // 稍微加快讓報數更俐落
-        u.pitch = 0.95; // 稍微降低音調，聲音會更有真人的厚度
-        u.volume = 1.0;
-
-        setTimeout(() => {
-            synth.speak(u);
-        }, 10);
+        synth.speak(u);
     }
 
     function playAlarm() {
@@ -103,8 +90,7 @@
         const audioCtx = new AudioContext();
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
+        osc.connect(gain); gain.connect(audioCtx.destination);
         osc.type = 'square';
         osc.frequency.setValueAtTime(880, audioCtx.currentTime);
         gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
@@ -113,15 +99,23 @@
         osc.stop(audioCtx.currentTime + 0.3);
     }
 
-    function handleStart() {
-        // 解鎖 Safari/Chrome 音訊
-        synth.speak(new SpeechSynthesisUtterance(""));
+    // --- 針對 iPhone 專門設計的啟動函數 ---
+    function iphoneSafeStart() {
+        // 1. 同步啟動：在點擊事件內立即呼叫語音引擎 (哪怕是空的)
+        // 這是 iPhone 能否發聲的最關鍵步驟
+        const unlock = new SpeechSynthesisUtterance("");
+        synth.speak(unlock);
 
+        // 2. 獲取秒數
         if (!isPaused) {
             remaining = parseInt(inputField.value, 10);
-            if (isNaN(remaining) || remaining <= 0) return;
+            if (isNaN(remaining) || remaining <= 0) {
+                alert("請輸入正確秒數");
+                return;
+            }
         }
         
+        // 3. 執行原有的倒數逻辑
         isPaused = false;
         document.getElementById("startBtn").style.display = "none";
         document.getElementById("pauseBtn").style.display = "inline-block";
@@ -151,4 +145,29 @@
         timerId = null;
         isPaused = true;
         synth.cancel();
-        document.getElementById("startBtn").
+        document.getElementById("startBtn").innerText = "繼續倒數";
+        document.getElementById("startBtn").style.display = "inline-block";
+        document.getElementById("pauseBtn").style.display = "none";
+    }
+
+    function handleReset() {
+        clearInterval(timerId);
+        timerId = null;
+        remaining = 0;
+        isPaused = false;
+        synth.cancel();
+        document.getElementById("display").textContent = "0";
+        resetUI();
+    }
+
+    function resetUI() {
+        inputField.disabled = false;
+        document.getElementById("startBtn").innerText = "開始倒數";
+        document.getElementById("startBtn").style.display = "inline-block";
+        document.getElementById("pauseBtn").style.display = "none";
+        setTimeout(() => inputField.focus(), 100);
+    }
+</script>
+
+</body>
+</html>
