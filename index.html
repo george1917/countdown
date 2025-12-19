@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>iPhone 語音倒數修正版</title>
+    <title>語音倒數計時器 - 終極穩定版</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
@@ -42,16 +42,16 @@
 <div class="container">
     <div class="instruction-box">
         <h3>【 操作提醒 】</h3>
-        <p>1. 確認手機<b>左側靜音開關</b>已關閉</p>
-        <p>2. 確認<b>音量</b>已調大</p>
-        <p>3. 點擊「開始」解鎖聲音</p>
+        <p>1. 輸入秒數後按「開始」</p>
+        <p>2. iPhone 需關閉靜音開關</p>
+        <p>3. Chrome 若無聲請重新整理</p>
     </div>
 
-    <input type="number" id="seconds" placeholder="秒數" min="1" inputmode="numeric" autofocus>
+    <input type="number" id="seconds" placeholder="輸入秒數" min="1" inputmode="numeric" autofocus>
     <div id="display">0</div>
 
     <div class="controls">
-        <button id="startBtn" onclick="iphoneSafeStart()">開始倒數</button>
+        <button id="startBtn" onclick="handleStart()">開始倒數</button>
         <button id="pauseBtn" onclick="handlePause()">暫停</button>
         <button id="resetBtn" onclick="handleReset()">重設</button>
     </div>
@@ -64,30 +64,43 @@
     const synth = window.speechSynthesis;
     const inputField = document.getElementById("seconds");
 
-    // 預加載人聲列表
-    window.onload = () => {
+    // 解決 Chrome 語音引擎初始化的核心邏輯
+    function initVoices() {
         synth.getVoices();
+    }
+    window.onload = () => {
+        initVoices();
+        if (synth.onvoiceschanged !== undefined) {
+            synth.onvoiceschanged = initVoices;
+        }
         inputField.focus();
     };
 
     function speak(text) {
+        // 先暫停所有正在說的話，這是防止語音重疊與卡死的關鍵
         synth.cancel(); 
+        
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "zh-TW";
         u.rate = 1.7; 
         u.pitch = 0.95;
         
+        // 挑選人聲邏輯優化
         const voices = synth.getVoices();
-        const targetVoice = voices.find(v => v.lang.includes('zh-TW') && (v.name.includes('Premium') || v.name.includes('Enhanced'))) || 
-                           voices.find(v => v.lang.includes('zh-TW'));
-        if (targetVoice) u.voice = targetVoice;
+        const preferred = voices.find(v => v.lang.includes('zh-TW') && (v.name.includes('Premium') || v.name.includes('Enhanced'))) || 
+                          voices.find(v => v.lang.includes('zh-TW'));
+        if (preferred) u.voice = preferred;
 
-        synth.speak(u);
+        // Chrome 需要稍微延遲一點呼叫 speak 以確保 cancel 完成
+        setTimeout(() => {
+            synth.speak(u);
+        }, 5);
     }
 
     function playAlarm() {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const audioCtx = new AudioContext();
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const audioCtx = new AudioCtx();
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.connect(gain); gain.connect(audioCtx.destination);
@@ -99,23 +112,20 @@
         osc.stop(audioCtx.currentTime + 0.3);
     }
 
-    // --- 針對 iPhone 專門設計的啟動函數 ---
-    function iphoneSafeStart() {
-        // 1. 同步啟動：在點擊事件內立即呼叫語音引擎 (哪怕是空的)
-        // 這是 iPhone 能否發聲的最關鍵步驟
+    function handleStart() {
+        // iPhone/Chrome 必要：在使用者點擊事件的「第一時間」解鎖
         const unlock = new SpeechSynthesisUtterance("");
         synth.speak(unlock);
 
-        // 2. 獲取秒數
         if (!isPaused) {
-            remaining = parseInt(inputField.value, 10);
-            if (isNaN(remaining) || remaining <= 0) {
+            const val = parseInt(inputField.value, 10);
+            if (isNaN(val) || val <= 0) {
                 alert("請輸入正確秒數");
                 return;
             }
+            remaining = val;
         }
         
-        // 3. 執行原有的倒數逻辑
         isPaused = false;
         document.getElementById("startBtn").style.display = "none";
         document.getElementById("pauseBtn").style.display = "inline-block";
