@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>20專業復健陪伴 v20</title>
+    <title>專業復健陪伴 v21</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -79,13 +79,12 @@
         if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
-    // 暖心鋼琴和弦鈴聲 (F-Major 9th: F4, A4, C5, E5, G5)
+    // 高級醫療環境音 (G-Major 13th)
     function playAlarm() {
         if (!document.getElementById("voiceToggle").checked) return;
         wakeUpAudio();
         const now = audioCtx.currentTime;
-        // 使用更圓潤的正弦波組合
-        const freqs = [349.23, 440.00, 523.25, 659.25, 783.99];
+        const freqs = [392.00, 493.88, 587.33, 659.25, 739.99, 987.77];
         freqs.forEach((freq, i) => {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -94,16 +93,14 @@
             gain.connect(audioCtx.destination);
             osc.frequency.setValueAtTime(freq, now);
             gain.gain.setValueAtTime(0, now);
-            // 模擬鋼琴觸鍵的漸強漸弱
-            gain.gain.linearRampToValueAtTime(0.1, now + 0.1); 
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 2.5);
+            gain.gain.linearRampToValueAtTime(0.12, now + 0.1); 
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 2.8);
             osc.start(now);
-            osc.stop(now + 2.6);
+            osc.stop(now + 3.0);
         });
     }
 
-    // 耳邊叮嚀調律器
-    function createMsg(text, rate = 0.8, pitch = 1.1) {
+    function createMsg(text, rate, pitch) {
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "zh-TW";
         const voices = synth.getVoices();
@@ -133,8 +130,8 @@
         
         if (document.getElementById("countToggle").checked) {
             synth.cancel();
-            // 報數加入句號。模擬真人一個字一個字的叮嚀語氣
-            synth.speak(createMsg(remaining + "。", 0.75, 1.1));
+            // 報數加入節奏性標點，產生引導律動感
+            synth.speak(createMsg(remaining + "... 。", 0.7, 1.05));
         }
 
         timerId = setInterval(() => {
@@ -144,11 +141,12 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm(); 
-                // 鈴聲後 1.2 秒發聲，使用極慢語速 0.55 營造耳邊叮嚀感
+                // 結束語優化：利用隱形成分增加呼吸厚度
                 setTimeout(() => {
                     synth.cancel();
-                    synth.speak(createMsg("我們休息一下。", 0.55, 1.1));
-                }, 1200);
+                    // 極慢語速 0.52 搭配微調標點，達成耳邊親口叮嚀的親密感
+                    synth.speak(createMsg("我們。 休息一下。", 0.52, 1.05));
+                }, 1300);
                 resetUI();
                 return;
             }
@@ -156,10 +154,9 @@
             
             if (document.getElementById("countToggle").checked) {
                 synth.cancel();
-                // 動態調整最後三秒的鼓勵感
-                let r = (remaining <= 3) ? 0.65 : 0.75;
-                let p = (remaining <= 3) ? 1.15 : 1.1;
-                synth.speak(createMsg(remaining + "。", r, p));
+                // 動態引導感：數字越小，發音越溫柔
+                let r = (remaining <= 3) ? 0.6 : 0.72;
+                synth.speak(createMsg(remaining + "... 。", r, 1.05));
             }
         }, 1000);
     }
@@ -196,4 +193,3 @@
 
 </body>
 </html>
-
