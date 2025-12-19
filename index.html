@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>語音鈴聲倒數器 iPhone 優化版</title>
+    <title>長輩專用大字倒數器</title>
     <style>
         * { 
             box-sizing: border-box; 
@@ -13,92 +13,92 @@
             margin: 0; 
             height: 100dvh;
             display: flex; align-items: center; justify-content: center;
-            background: #f2f2f7;
+            background: #ffffff;
             font-family: -apple-system, "Microsoft JhengHei", sans-serif;
         }
         .container {
-            width: 92%; max-width: 400px; padding: 25px;
-            background: #ffffff; border-radius: 30px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            width: 95%; max-width: 450px; padding: 15px;
+            background: #ffffff; text-align: center;
         }
 
-        /* --- 使用說明 --- */
+        /* --- 針對長輩優化的超大說明區 --- */
         .instruction-box {
-            background: #fff9db; 
-            border: 3px solid #f08c00;
+            background: #ffff00; /* 純黃色背景，對比最強 */
+            border: 5px solid #000000; /* 粗黑邊框 */
             border-radius: 20px;
-            padding: 18px !important;
+            padding: 20px !important;
             margin-bottom: 20px !important;
             text-align: left;
         }
         .instruction-box h3 {
-            margin: 0 0 8px 0 !important;
-            font-size: 26px !important;
-            color: #e67700 !important;
+            margin: 0 0 10px 0 !important;
+            font-size: 40px !important; /* 標題極大 */
+            color: #000000 !important;
             font-weight: 900 !important;
+            text-decoration: underline;
         }
         .instruction-box p {
-            margin: 5px 0 !important;
-            font-size: 19px !important;
-            color: #2b2f33 !important;
-            line-height: 1.3 !important;
-            font-weight: 700 !important;
+            margin: 10px 0 !important;
+            font-size: 30px !important; /* 內文極大 */
+            color: #000000 !important;
+            line-height: 1.2 !important;
+            font-weight: 900 !important;
         }
 
+        /* --- 輸入與顯示 --- */
         input[type="number"] {
-            width: 100%; font-size: 32px; padding: 15px; margin-bottom: 15px;
-            border: 2px solid #c6c6c8; border-radius: 14px; text-align: center;
-            outline: none; background: #f2f2f7;
-            -webkit-appearance: none;
+            width: 100%; font-size: 45px; padding: 15px; margin-bottom: 15px;
+            border: 4px solid #000000; border-radius: 15px; text-align: center;
+            outline: none; background: #f9f9f9; color: #000000;
         }
 
         #display {
-            font-size: 110px;
-            font-weight: 900; color: #000000;
+            font-size: 130px; /* 數字特大 */
+            font-weight: 900; color: #ff3b30; /* 紅色數字更醒目 */
             margin: 10px 0; text-align: center;
+            font-family: Arial, sans-serif;
             font-variant-numeric: tabular-nums;
         }
 
-        /* --- 按鈕優化：解決折行問題 --- */
+        /* --- 按鈕：簡短化文字防止折行 --- */
         .controls { 
             display: flex; 
-            gap: 10px; /* 縮小間距讓按鈕有更多空間 */
+            gap: 8px; 
         }
         button {
             flex: 1; 
-            font-size: 20px; /* 稍微縮小字體以適應寬度 */
-            font-weight: 700; 
-            padding: 18px 5px; /* 減少左右內邊距 */
-            border: none; 
+            font-size: 26px; /* 適合長輩閱讀的大小 */
+            font-weight: 900; 
+            padding: 22px 0; /* 加高按鈕方便點擊 */
+            border: 4px solid #000000; 
             border-radius: 15px; 
             cursor: pointer;
-            white-space: nowrap; /* 強制文字不折行 */
-            overflow: hidden;    /* 若溢出則隱藏 */
-            transition: transform 0.1s, opacity 0.1s;
+            white-space: nowrap; 
+            transition: transform 0.1s;
         }
-        #startBtn { background: #007aff; color: white; }
-        #pauseBtn { background: #ff9500; color: white; display: none; }
-        #resetBtn { background: #e5e5ea; color: #000000; }
+        #startBtn { background: #34c759; color: #000000; } /* 綠色開始 */
+        #pauseBtn { background: #ffcc00; color: #000000; display: none; } /* 黃色暫停 */
+        #resetBtn { background: #d1d1d6; color: #000000; } /* 灰色重設 */
         
-        button:active { transform: scale(0.92); opacity: 0.8; }
+        button:active { transform: scale(0.9); }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="instruction-box">
-        <h3>【 使用說明 】</h3>
-        <p>1. 輸入秒數</p>
-        <p>2. 按下「開始」</p>
-        <p>3. 結束有鈴聲+語音</p>
+        <h3>使用說明</h3>
+        <p>1. 打入秒數</p>
+        <p>2. 按【開始】</p>
+        <p>3. 聽聲音數數</p>
     </div>
 
-    <input type="number" id="seconds" placeholder="秒數" min="1" inputmode="numeric" autofocus>
+    <input type="number" id="seconds" placeholder="點這打數字" min="1" inputmode="numeric" autofocus>
     
     <div id="display">0</div>
 
     <div class="controls">
-        <button id="startBtn" onclick="handleStart()">開始倒數</button>
+        <button id="startBtn" onclick="handleStart()">開始</button>
         <button id="pauseBtn" onclick="handlePause()">暫停</button>
         <button id="resetBtn" onclick="handleReset()">重設</button>
     </div>
@@ -111,15 +111,13 @@
     const synth = window.speechSynthesis;
     const inputField = document.getElementById("seconds");
 
-    // 禁止 iPhone 手勢縮放
-    document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
     window.onload = () => inputField.focus();
 
     function speak(text) {
         synth.cancel(); 
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "zh-TW";
-        u.rate = 1.7; 
+        u.rate = 1.6; 
         setTimeout(() => synth.speak(u), 5);
     }
 
@@ -132,13 +130,15 @@
             gain.connect(audioCtx.destination);
             osc.type = 'square';
             osc.frequency.setValueAtTime(freq, time);
-            gain.gain.setValueAtTime(0.3, time);
-            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.3);
+            gain.gain.setValueAtTime(0.5, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.4);
             osc.start(time);
-            osc.stop(time + 0.3);
+            osc.stop(time + 0.4);
         }
+        // 響亮的連續三聲
         beep(audioCtx.currentTime, 880);
-        beep(audioCtx.currentTime + 0.4, 880);
+        beep(audioCtx.currentTime + 0.5, 880);
+        beep(audioCtx.currentTime + 1.0, 880);
     }
 
     function handleStart() {
@@ -161,7 +161,7 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm();
-                setTimeout(() => speak("時間到"), 800); 
+                setTimeout(() => speak("時間到了"), 1500); 
                 resetUI();
                 return;
             }
@@ -175,7 +175,7 @@
         timerId = null;
         isPaused = true;
         synth.cancel();
-        document.getElementById("startBtn").innerText = "繼續倒數";
+        document.getElementById("startBtn").innerText = "繼續";
         document.getElementById("startBtn").style.display = "inline-block";
         document.getElementById("pauseBtn").style.display = "none";
     }
@@ -192,7 +192,7 @@
 
     function resetUI() {
         inputField.disabled = false;
-        document.getElementById("startBtn").innerText = "開始倒數";
+        document.getElementById("startBtn").innerText = "開始";
         document.getElementById("startBtn").style.display = "inline-block";
         document.getElementById("pauseBtn").style.display = "none";
         setTimeout(() => inputField.focus(), 100);
