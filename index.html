@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>11專業護理師計時器</title>
+    <title>11.0專業復健計時器</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -14,14 +14,14 @@
         }
         .container {
             width: 100%; max-width: 450px; padding: 20px; margin-top: auto; margin-bottom: auto;
-            background: #ffffff; border-radius: 30px; box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            background: #ffffff; border-radius: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.1);
         }
         .instruction-box {
             background: #e7f5ff; border: 2px solid #339af0; border-radius: 20px;
             padding: 15px 20px; margin-bottom: 20px; text-align: center;
         }
         .instruction-box h3 { margin: 0 0 5px 0; font-size: 28px; color: #1971c2; }
-        .instruction-box p { margin: 0; font-size: 22px; color: #495057; font-weight: bold; }
+        .instruction-box p { margin: 0; font-size: 22px; color: #495057; font-weight: 800; }
         .settings-container { background: #f8f9fa; border-radius: 15px; padding: 10px; margin-bottom: 15px; }
         .settings-box { display: flex; align-items: center; gap: 12px; padding: 5px; }
         .settings-box label { font-size: 22px; font-weight: 700; color: #495057; }
@@ -33,7 +33,7 @@
         #display { font-size: 110px; font-weight: 900; color: #212529; margin: 10px 0; text-align: center; font-variant-numeric: tabular-nums; }
         .controls { display: flex; gap: 12px; }
         button {
-            flex: 1; font-size: 24px; font-weight: 700; padding: 20px 5px; border: none; border-radius: 18px; cursor: pointer; transition: 0.1s;
+            flex: 1; font-size: 24px; font-weight: 700; padding: 20px 5px; border: none; border-radius: 18px; cursor: pointer; transition: transform 0.1s;
         }
         #startBtn { background: #339af0; color: white; }
         #pauseBtn { background: #fab005; color: white; display: none; }
@@ -45,23 +45,23 @@
 
 <div class="container">
     <div class="instruction-box">
-        <h3>專業健康叮嚀</h3>
-        <p>請輸入秒數並開始</p>
+        <h3>專業復健陪伴</h3>
+        <p>輸入秒數後開始</p>
     </div>
     <div class="settings-container">
         <div class="settings-box">
             <input type="checkbox" id="voiceToggle" checked>
-            <label for="voiceToggle">結束鈴聲與語音</label>
+            <label for="voiceToggle">開啟結束鈴聲與語音</label>
         </div>
         <div class="settings-box">
             <input type="checkbox" id="countToggle" checked>
-            <label for="countToggle">倒數過程報數</label>
+            <label for="countToggle">倒數中要報數</label>
         </div>
     </div>
     <input type="number" id="seconds" placeholder="輸入秒數" inputmode="numeric">
     <div id="display">0</div>
     <div class="controls">
-        <button id="startBtn" onclick="handleStart()">開始</button>
+        <button id="startBtn" onclick="handleStart()">開始計時</button>
         <button id="pauseBtn" onclick="handlePause()">暫停</button>
         <button id="resetBtn" onclick="handleReset()">重設</button>
     </div>
@@ -75,33 +75,37 @@
     let audioCtx = null;
     const inputField = document.getElementById("seconds");
 
+    inputField.addEventListener('blur', () => { window.scrollTo(0, 0); });
+    inputField.addEventListener('focus', function() { this.value = ''; });
+
     function wakeUpAudio() {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
-    // 模擬專業鋼琴和弦鈴聲
+    // 專業醫療級和弦鈴聲 (C大調和弦)
     function playAlarm() {
         if (!document.getElementById("voiceToggle").checked) return;
         wakeUpAudio();
         const now = audioCtx.currentTime;
-        const freqs = [659.25, 987.77, 1318.51]; // E5, B5, E6
+        // 頻率：C5, E5, G5, C6 營造清脆且溫暖的和聲
+        const freqs = [523.25, 659.25, 783.99, 1046.50];
         freqs.forEach((freq, i) => {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            osc.type = 'triangle'; // 使用較柔和的三角形波
+            osc.type = 'sine'; // 正弦波最純淨
             osc.connect(gain);
             gain.connect(audioCtx.destination);
             osc.frequency.setValueAtTime(freq, now);
             gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(0.5 / freqs.length, now + 0.1); 
+            gain.gain.linearRampToValueAtTime(0.2, now + 0.1); 
             gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
             osc.start(now);
             osc.stop(now + 1.6);
         });
     }
 
-    function createMsg(text, rate = 0.75, pitch = 0.85) {
+    function createMsg(text, rate = 0.72, pitch = 0.82) {
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "zh-TW";
         const voices = synth.getVoices();
@@ -118,7 +122,7 @@
     function handleStart() {
         inputField.blur();
         wakeUpAudio();
-        synth.speak(new SpeechSynthesisUtterance("")); // 預熱
+        synth.speak(new SpeechSynthesisUtterance("")); 
         if (!isPaused) {
             remaining = parseInt(inputField.value, 10);
             if (isNaN(remaining) || remaining <= 0) return;
@@ -140,11 +144,11 @@
                 clearInterval(timerId);
                 timerId = null;
                 document.getElementById("display").textContent = "0";
-                playAlarm(); // 先響美妙的和弦鈴聲
+                playAlarm(); 
                 setTimeout(() => {
                     synth.cancel();
-                    // 結束語優化：一句話，專業、親切、自然
-                    synth.speak(createMsg("好，我們休息一下", 0.72, 0.85));
+                    // 對標復邊護理師：溫柔、沈穩、帶有關懷的單句
+                    synth.speak(createMsg("我們休息一下"));
                 }, 800);
                 resetUI();
                 return;
@@ -180,7 +184,7 @@
     function resetUI() {
         inputField.disabled = false;
         inputField.value = '';
-        document.getElementById("startBtn").innerText = "開始";
+        document.getElementById("startBtn").innerText = "開始計時";
         document.getElementById("startBtn").style.display = "inline-block";
         document.getElementById("pauseBtn").style.display = "none";
     }
