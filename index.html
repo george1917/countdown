@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>28專業復健陪伴 v28</title>
+    <title>29專業復健陪伴 v29</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -17,7 +17,7 @@
             background: #ffffff; border-radius: 35px; box-shadow: 0 10px 40px rgba(0,0,0,0.08);
         }
         .nurse-header { text-align: center; margin-bottom: 20px; }
-        .nurse-header h3 { margin: 0; font-size: 28px; color: #1c7ed6; letter-spacing: 1px; }
+        .nurse-header h3 { margin: 0; font-size: 28px; color: #1c7ed6; }
         .nurse-header p { margin: 8px 0 0; font-size: 20px; color: #868e96; font-weight: 500; }
         .settings-container { background: #f8f9fa; border-radius: 20px; padding: 15px; margin-bottom: 20px; }
         .settings-box { display: flex; align-items: center; gap: 15px; padding: 10px 0; }
@@ -46,7 +46,6 @@
         <h3>專業復健陪伴</h3>
         <p>溫柔叮嚀 · 穩定陪伴</p>
     </div>
-    
     <div class="settings-container">
         <div class="settings-box">
             <input type="checkbox" id="voiceToggle" checked>
@@ -57,7 +56,6 @@
             <label for="countToggle">倒數時唸出數字</label>
         </div>
     </div>
-
     <input type="number" id="seconds" placeholder="請設定秒數" inputmode="numeric">
     <div id="display">0</div>
     <div class="controls">
@@ -80,11 +78,12 @@
         if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
+    // 新鈴聲：C大調九和弦 (C4, E4, G4, B4, D5) - 高級專業診所質感
     function playAlarm() {
         if (!document.getElementById("voiceToggle").checked) return;
         wakeUpAudio();
         const now = audioCtx.currentTime;
-        const freqs = [329.63, 415.30, 493.88, 622.25, 739.99];
+        const freqs = [261.63, 329.63, 392.00, 493.88, 587.33];
         freqs.forEach((freq) => {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -93,10 +92,10 @@
             gain.connect(audioCtx.destination);
             osc.frequency.setValueAtTime(freq, now);
             gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(0.18, now + 0.1); 
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 2.5);
+            gain.gain.linearRampToValueAtTime(0.2, now + 0.1); 
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 3.0);
             osc.start(now);
-            osc.stop(now + 2.6);
+            osc.stop(now + 3.1);
         });
     }
 
@@ -117,7 +116,6 @@
     function handleStart() {
         inputField.blur();
         wakeUpAudio();
-        synth.speak(new SpeechSynthesisUtterance("")); 
         if (!isPaused) {
             remaining = parseInt(inputField.value, 10);
             if (isNaN(remaining) || remaining <= 0) return;
@@ -140,17 +138,21 @@
             
             if (countEnabled) {
                 synth.cancel();
-                // 動態節奏調律：
-                // 雙位數：1.35倍速快唸，解決「倒數比聲音快」
-                // 個位數：0.75倍速慢唸，解決「聲音比倒數快」
-                let rate = (remaining > 10) ? 1.35 : 0.75;
-                let pitch = (remaining <= 5) ? 1.15 : 1.1; // 最後5秒調高音調，增加鼓勵朝氣
+                // 分段同步優化策略
+                let rate, delay;
+                if (remaining > 10) {
+                    // 30-20秒：極速發音模式，解決「倒數比聲音快」
+                    rate = 1.6; 
+                    delay = 0; 
+                } else {
+                    // 5-0秒：慢速悠閒模式，解決「聲音比倒數快」
+                    rate = 0.65; 
+                    delay = 100; // 微幅延遲發聲，讓聲音跟螢幕跳動對齊
+                }
                 
-                // 使用微型非對稱延遲
-                let triggerDelay = (remaining > 10) ? 0 : 150; 
                 setTimeout(() => {
-                    synth.speak(createMsg(String(remaining), rate, pitch, false));
-                }, triggerDelay);
+                    synth.speak(createMsg(String(remaining), rate, 1.1, false));
+                }, delay);
             }
             remaining--;
         } else {
@@ -161,9 +163,9 @@
             setTimeout(() => {
                 if (!document.getElementById("voiceToggle").checked) return;
                 synth.cancel();
-                // 26歲護理師溫柔且具氣息的收尾
+                // 26歲治療師具備共鳴氣息的叮嚀
                 synth.speak(createMsg("我們休息一下", 0.52, 1.1, true));
-            }, 600);
+            }, 800);
             resetUI();
         }
     }
@@ -195,7 +197,6 @@
         document.getElementById("startBtn").style.display = "inline-block";
         document.getElementById("pauseBtn").style.display = "none";
     }
-    
     window.onload = () => { synth.getVoices(); };
 </script>
 
