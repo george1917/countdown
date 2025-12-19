@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>9專業護理師計時器</title>
+    <title>10專業護理師計時器</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; margin: 0; background: #f2f2f7; }
@@ -90,14 +90,14 @@
         if (!document.getElementById("voiceToggle").checked) return;
         wakeUpAudio();
         const now = audioCtx.currentTime;
-        // 使用更和諧、不突兀的專業音頻和弦 (E5, G5)
-        [659, 783].forEach(freq => {
+        // 清脆的大三和弦，大音量提醒
+        [784, 988, 1175].forEach(freq => {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.connect(gain); gain.connect(audioCtx.destination);
             osc.frequency.setValueAtTime(freq, now);
             gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(0.8, now + 0.05); 
+            gain.gain.linearRampToValueAtTime(1.0, now + 0.05); 
             gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
             osc.start(now); osc.stop(now + 1.2);
         });
@@ -121,22 +121,20 @@
         if (!document.getElementById("voiceToggle").checked) return;
         synth.cancel();
 
-        // 使用「完成囉」作為主結束語，這在 iPhone 上的發音共鳴比「好囉」更好
-        const m1 = createMsg("完成囉", 0.75, 0.8); 
+        // 模擬真人對話：先交代狀態，再給予關懷
+        const m1 = createMsg("好，時間到了", 0.78, 0.8); 
         synth.speak(m1);
 
-        // 模擬真人停頓，觀察後再給予叮嚀
         setTimeout(() => {
-            const m2 = createMsg("記得休息", 0.7, 0.85); 
+            const m2 = createMsg("辛苦了", 0.7, 0.85); 
             synth.speak(m2);
-        }, 1200); 
+        }, 1500); 
     }
 
     function speak(text) {
         if (!document.getElementById("countToggle").checked) return;
         synth.cancel();
-        // 報數維持沈穩
-        synth.speak(createMsg(text, 0.7, 0.85));
+        synth.speak(createMsg(text, 0.75, 0.8));
     }
 
     function handleStart() {
@@ -161,7 +159,7 @@
                 timerId = null;
                 document.getElementById("display").textContent = "0";
                 playAlarm();
-                setTimeout(speakEndingSequence, 1000); 
+                setTimeout(speakEndingSequence, 800); 
                 resetUI();
                 return;
             }
